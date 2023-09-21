@@ -1,0 +1,72 @@
+---
+layout: default
+title: Gem Usage Summary
+date:   2023-09-21 15:57:14 +0800
+categories: tools
+---
+
+# RubyGems
+## 1 安装
++ 安装
+
+```
+//未亲测
+RubyGems大约创建于2003年11月，从Ruby 1.9版起成为Ruby标准库的一部分。
+
+如果你的 Ruby 低于 1.9 版本，也可以通过手动安装:
+
+首先下载安装包：https://rubygems.org/pages/download。
+解压并进入目录，执行命令：ruby setup.rb
+```
+
+```
+cocoapods通过gem安装
+```
+
+## 2 使用 
+
++ 更新 RubyGems
+
+```
+gem update --system
+```
+
++ sudo gem install mygem
+
+```
+通过search查找到具体的软件包之后，就可以通过install 进行安装，安装过程中会自动检测依赖并安装
+```
+
++ sudo gem uninstall mygem
+
+```
+卸载软件
+```
+
++ 列出已安装的gem
+
+```
+gem list --local # 已安装的gem
+gem list --remote # 可用的gem
+```
+
++ 源管理
+
+```
+gem sources -l
+
+gem sources --remove https://rubygems.org/
+
+gem sources -a https://gems.ruby-china.com/
+```
+
++ 其他问题
+
+```
+https://wayou.github.io/2020/10/22/gem-install-%E6%97%B6%E6%9D%83%E9%99%90%E9%97%AE%E9%A2%98%E7%9A%84%E4%BF%AE%E6%AD%A3/
+sudo gem install cocoapds 报错（加了sudo的情况下报错）
+ERROR:  While executing gem ... (Gem::FilePermissionError)
+    You don't have write permissions for the /Library/Ruby/Gems/2.6.0 directory.
+解决：使用--user-install
+gem install cocoapods --user-install
+```
