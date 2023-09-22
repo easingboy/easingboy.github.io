@@ -1,9 +1,14 @@
 ---
-layout: default
-title: Gem Usage Summary
-date:   2023-09-21 15:57:14 +0800
-categories: tools
+layout:       post
+title:        "Gem Usage Summary"
+author:       "Jacky"
+header-style: text
+catalog:      true
+tags:
+    - Tools
 ---
+
+> RubyGems的使用总结
 
 # RubyGems
 ## 1 安装
