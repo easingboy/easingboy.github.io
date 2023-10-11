@@ -8,7 +8,7 @@ tags:
     - Tools
 ---
 
-> RubyGems的使用总结
+> MacOS下有很多的包管理工具，能很方便的帮助我们下载、安装和卸载软件包，包括Homebrew、MacPort、RubyGems等，使用上都大同小异，这里以Gem为例总结工具的使用
 
 # RubyGems
 ## 1 安装
