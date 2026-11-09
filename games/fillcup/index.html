@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>装杯</title>
+<script src="../../config.js"></script>
+<link rel="stylesheet" href="../shared/style.css" />
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<style>
+  :root { --accent: #e94560; --text: #fff; --text-dim: #a0a5b8; --success: #00d9a5; --secondary: #0f3460; --cup-a: #4ecca3; --cup-b: #e94560; }
+  body { background: linear-gradient(180deg,#16213e,#1a1a2e 65%,#0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; }
+  [hidden] { display: none !important; }
+  button, a { touch-action: manipulation; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  button:disabled { cursor: default; }
+  .game-shell { width: min(100%,460px); margin: 0 auto; padding: max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0,1fr) 40px; padding: 0 0 14px; gap: 10px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; background: var(--secondary); border: 0; }
+  .help-btn:disabled { opacity: .35; }
+  .heading { text-align: center; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: 2px; color: var(--gold); }
+  .subtitle { font-size: 12px; line-height: 1.5; color: var(--text-dim); margin: 4px 0 0; }
+  .menu-intro { text-align: center; margin: 8px 0 20px; }
+  .menu-intro h2 { color: var(--gold); margin: 0 0 8px; font-size: 34px; }
+  .menu-intro p { color: var(--text-dim); font-size: 14px; margin: 0; }
+  .mode-buttons { display: grid; gap: 10px; max-width: 280px; margin: 0 auto 24px; }
+  .mode-button { min-height: 58px; background: #16213e; border: 2px solid var(--cup-a); border-radius: 12px; padding: 8px; color: var(--cup-a); }
+  .mode-button.pvp { border-color: var(--accent); color: #fb7185; }
+  .mode-button.online { border-color: #7dd3fc; color: #7dd3fc; }
+  .online-panel { margin-bottom: 16px; padding: 14px; border-radius: 12px; background: rgba(15,52,96,.5); border: 1px solid rgba(125,211,252,.22); text-align: center; }
+  .online-panel p { font-size: 13px; line-height: 1.7; margin: 4px 0; color: var(--text-dim); }
+  .online-panel #onlineStatus { color: #7dd3fc; }
+  .online-panel input { width: 100%; min-width: 0; padding: 10px; color: #fff; border: 1px solid #486076; background: #16213e; border-radius: 8px; margin-top: 10px; }
+  .online-panel .dialog-footer { margin-top: 10px; }
+  .snapshot .liquid-total { transition: none; }
+  .mode-button strong { font-size: 17px; display: block; }
+  .mode-button small { display: block; font-size: 11px; margin-top: 4px; color: var(--text-dim); }
+  .mode-button:hover, .choice:hover, .pour-btn:hover:not(:disabled) { filter: brightness(1.2); }
+  .mode-button:active, .choice:active, .pour-btn:active:not(:disabled) { transform: scale(.96); }
+  .option-group { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+  .option-group legend { text-align: center; width: 100%; font-size: 12px; color: var(--text-dim); padding: 0 0 10px; }
+  .choices { display: flex; justify-content: center; gap: 8px; }
+  .choice { min-width: 0; min-height: 42px; flex: 1; max-width: 62px; padding: 6px 2px; border: 1px solid rgba(255,255,255,.13); border-radius: 9px; background: rgba(255,255,255,.04); color: var(--text-dim); font-size: 13px; }
+  .cup-mode .choice { max-width: 104px; }
+  .choice[aria-pressed="true"] { color: #fff; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .cup-mode .choice[aria-pressed="true"], #capAOptions .choice[aria-pressed="true"] { color: #082c24; background: var(--cup-a); border-color: var(--cup-a); }
+  .stats-text { text-align: center; color: var(--text-dim); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; margin: 20px 0 4px; }
+  .stats-note { text-align: center; color: #788198; font-size: 11px; margin: 0 0 18px; }
+  .rules-card { background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); padding: 14px 16px; border-radius: 12px; font-size: 12px; line-height: 1.9; color: var(--text-dim); }
+  .rules-card h3 { color: var(--gold); margin: 0 0 6px; font-size: 13px; }
+  .rules-card p { margin: 0; }
+  .sound-option { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--text-dim); font-size: 12px; min-height: 44px; margin-top: 8px; }
+  .sound-option input { accent-color: var(--success); width: 18px; height: 18px; }
+  .status-bar { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 10px; color: var(--text-dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+  #waterText { color: var(--success); }
+  #timer { white-space: nowrap; }
+  .turn-text { min-height: 42px; display: flex; align-items: center; justify-content: center; margin: 8px 0; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.6; color: #5b9bd5; }
+  .turn-text.player2 { color: #f0a500; }
+  .board { display: grid; align-items: center; gap: 4px; grid-template-columns: minmax(64px,1fr) minmax(120px,170px) minmax(64px,1fr); }
+  .player-panel { text-align: center; align-self: center; color: var(--success); }
+  .player-panel.player2 { color: #fb7185; }
+  .player-name { display: block; font-size: 13px; font-weight: 600; }
+  .player-status { min-height: 28px; font-size: 11px; line-height: 1.5; color: var(--text-dim); margin: 6px 0; }
+  .player-panel.active .player-name { text-decoration: underline; text-underline-offset: 6px; }
+  .player-actions { display: grid; gap: 12px; }
+  .pour-btn { min-height: 48px; min-width: 0; padding: 8px 3px; border: 1px solid rgba(78,204,163,.5); border-radius: 12px; color: var(--cup-a); background: rgba(78,204,163,.12); font-weight: 600; font-size: 14px; }
+  .player2 .pour-btn, .cup-b .pour-btn { background: rgba(233,69,96,.12); border-color: rgba(233,69,96,.45); color: #fb7185; }
+  .pour-btn:disabled { opacity: .32; }
+  .cup-figure { margin: 0; min-width: 0; text-align: center; }
+  .cup-svg { display: block; width: 100%; height: clamp(224px,calc(100svh - 310px),300px); overflow: visible; }
+  .cup-figure figcaption { color: var(--cup-a); font-size: 13px; font-weight: 600; line-height: 1.5; }
+  .cup-figure.cup-b figcaption { color: #fb7185; }
+  .cup-remaining { display: block; color: var(--text-dim); font-size: 11px; font-weight: 400; margin-top: 4px; }
+  .liquid-total { transform-origin: 0 254px; transition: transform .5s ease-in-out; }
+  .liquid-old { transform-origin: 0 254px; }
+  .pour-stream { opacity: 0; }
+  .pouring .pour-stream { animation: stream .5s ease-out; }
+  .splash { opacity: 0; transform-origin: 90px 24px; }
+  .overflow .splash { animation: splash .8s ease-out forwards; }
+  .overflow .glass-edge { stroke: #e94560; }
+  @keyframes stream { 0% { opacity: 0; } 20%,65% { opacity: .8; } 100% { opacity: 0; } }
+  @keyframes splash { 0% { opacity: 0; transform: scale(.2); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.35) translateY(16px); } }
+  .board.dual { grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 14px; }
+  .board.dual .player-panel { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 9px 16px; margin-bottom: 4px; color: #5b9bd5; }
+  .board.dual .opponent { color: #f0a500; }
+  .board.dual .cup-svg { height: clamp(220px,calc(100svh - 330px),280px); }
+  .dual-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 16px; }
+  .board-note { margin: 18px 0 0; color: var(--text-dim); font-size: 12px; text-align: center; line-height: 1.8; }
+  dialog { width: min(400px,calc(100% - 32px)); max-height: calc(100svh - 40px); background: #16213e; color: #fff; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; padding: 24px; }
+  dialog::backdrop { background: rgba(0,0,0,.84); }
+  dialog h2 { margin: 0 0 16px; font-size: 24px; color: var(--gold); }
+  dialog p { font-size: 14px; line-height: 1.8; color: #b7bdcc; }
+  .dialog-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+  .btn { min-height: 44px; min-width: 100px; border-radius: 22px; }
+  .btn.primary { background: var(--success); border-color: var(--success); color: #072e24; }
+  .btn.primary:hover { background: #4ecca3; border-color: #4ecca3; }
+  .text-btn { border: 0; background: none; color: var(--text-dim); min-height: 44px; padding: 10px; font-size: 13px; }
+  #resultDialog { text-align: center; }
+  #resultDialog.win h2 { color: var(--success); }
+  #resultDialog.loss h2 { color: #fb7185; }
+  .result-symbol { font-size: 44px; line-height: 1; color: var(--gold); margin-bottom: 20px; }
+  #shareNote { min-height: 20px; margin: 4px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+  @media (max-width: 360px) { .game-shell { padding-left: 12px; padding-right: 12px; } .choices { gap: 6px; } .pour-btn { font-size: 13px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="game-header">
+    <a id="backLink" class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+    <div class="heading"><h1>装杯</h1><p id="capacityText" class="subtitle">谁装溢出谁输</p></div>
+    <button id="helpBtn" class="help-btn" aria-label="游戏规则" hidden>?</button>
+  </header>
+  <section id="menuScreen" aria-label="装杯模式选择">
+    <div class="menu-intro"><h2>装杯</h2><p>轮流倒水，别让最后一杯溢出</p></div>
+    <div class="mode-buttons">
+      <button id="pveBtn" class="mode-button"><strong>人机对战</strong><small>轮流倒水，斗智斗勇</small></button>
+      <button id="pvpBtn" class="mode-button pvp"><strong>双人对战</strong><small>同屏对抗，朋友切磋</small></button>
+      <button id="onlineBtn" class="mode-button online"><strong>联网双人</strong><small>创建房间，邀请好友在线对战</small></button>
+    </div>
+    <fieldset class="option-group cup-mode"><legend>杯子模式</legend><div class="choices"><button class="choice" data-cup-mode="single" aria-pressed="true">单杯</button><button class="choice" data-cup-mode="dual" aria-pressed="false">双杯</button></div></fieldset>
+    <fieldset id="singleOptions" class="option-group"><legend>杯子容量</legend><div id="capacityOptions" class="choices"></div></fieldset>
+    <div id="dualOptions" hidden>
+      <fieldset class="option-group"><legend>杯 A 容量</legend><div id="capAOptions" class="choices"></div></fieldset>
+      <fieldset class="option-group"><legend>杯 B 容量</legend><div id="capBOptions" class="choices"></div></fieldset>
+    </div>
+    <p id="statsText" class="stats-text"></p><p class="stats-note">本地模式以玩家1统计；联网仅统计本房间双方胜场</p>
+    <section class="rules-card"><h3>游戏规则</h3><p id="menuRules">两人轮流往杯子里倒水，每次倒 1 或 2 小杯。</p><p>恰好倒满不算溢出，仍需继续轮流倒水。<br>让任意杯子溢出的人输。</p></section>
+    <label class="sound-option"><input id="soundEnabled" type="checkbox" checked>操作音效</label>
+  </section>
+  <section id="onlinePanel" class="online-panel" hidden aria-label="联网房间">
+    <p id="onlineStatus" role="status"></p><p id="roomConfig"></p><p id="roomScores"></p>
+    <div id="inviteControls" hidden><input id="inviteLink" readonly aria-label="邀请链接"><div class="dialog-footer"><button id="inviteCopyBtn" class="btn">复制邀请链接</button><button id="inviteShareBtn" class="btn">分享邀请</button></div></div>
+    <div class="dialog-footer"><button id="joinRoomBtn" class="btn primary" hidden disabled>加入对战</button><button id="onlineRetryBtn" class="text-btn" hidden>重新连接</button><button id="onlineLeaveBtn" class="text-btn">返回模式选择</button></div>
+    <p id="inviteNote" aria-live="polite"></p>
+  </section>
+  <section id="playScreen" hidden aria-label="装杯对局">
+    <div class="status-bar"><span id="roundText"></span><span id="waterText"></span><time id="timer" aria-label="对局用时">0秒</time></div>
+    <p id="turnText" class="turn-text" role="status"></p>
+    <div id="board" class="board"></div>
+    <p class="board-note">每次倒 1 或 2 小杯 · 恰好倒满不算输<br>返回可重新选择模式，未结束的对局不计战绩</p>
+  </section>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">装杯 · 游戏规则</h2>
+  <p id="rulesMode"></p>
+  <p>每次只能倒 1 或 2 小杯。恰好装满不算输，下一位仍须倒水；任意杯子溢出，倒水的人立即输。</p>
+  <p>玩家1固定先手。没有倒计时、分数或悔棋，帮助和后台停留时间也计入总用时。想想怎样让对手陷入无路可走的局面。</p>
+  <p>只保存累计胜负，不保存未完成的对局。同屏双人战绩同样以玩家1为视角。</p>
+  <div class="dialog-footer"><button id="closeRulesBtn" class="btn primary">知道了</button><button id="rulesMenuBtn" class="text-btn">返回模式选择</button></div>
+</dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle">
+  <div class="result-symbol" aria-hidden="true">∿</div><h2 id="resultTitle"></h2><p id="resultDetails"></p>
+  <div class="dialog-footer"><button id="restartBtn" class="btn primary">再来一局</button><button id="menuBtn" class="btn">返回菜单</button></div>
+  <div class="dialog-footer"><button id="shareBtn" class="text-btn">分享结果</button><button id="copyBtn" class="text-btn">复制链接</button></div>
+  <p id="shareNote" aria-live="polite"></p>
+</dialog>
+<script src="../shared/utils.js"></script>
+<script src="online.js"></script>
+<script id="fillcup-engine">
+const SINGLE_CAPACITIES = [7,11,15,19];
+const DUAL_CAPACITIES = [5,7,9,11,13];
+
+function normalizeStats(value) {
+  if (typeof value === 'string') { try { value=JSON.parse(value); } catch (_) { value=null; } }
+  const source=value && typeof value==='object' && !Array.isArray(value) ? value : {};
+  const integer=n=>Number.isSafeInteger(n) && n>=0 && n<=Math.floor(Number.MAX_SAFE_INTEGER/2)-1 ? n : 0;
+  const wins=integer(source.wins), losses=integer(source.losses);
+  const streak=Math.min(wins,integer(source.streak));
+  return {wins,losses,total:wins+losses,streak,maxStreak:Math.min(wins,Math.max(streak,integer(source.maxStreak)))};
+}
+function recordResult(value,winner) {
+  const stats=normalizeStats(value);
+  if (winner===1) { stats.wins++; stats.streak++; stats.maxStreak=Math.max(stats.maxStreak,stats.streak); }
+  else { stats.losses++; stats.streak=0; }
+  stats.total=stats.wins+stats.losses;
+  return stats;
+}
+
+class FillCupGame {
+  constructor(options={},now=Date.now) {
+    this.options={capacity:7,capA:5,capB:7,cupMode:'single',mode:'pve',...options};
+    const o=this.options;
+    if (!['single','dual'].includes(o.cupMode) || !['pve','pvp'].includes(o.mode) || !SINGLE_CAPACITIES.includes(o.capacity) || !DUAL_CAPACITIES.includes(o.capA) || !DUAL_CAPACITIES.includes(o.capB)) throw new RangeError('无效的装杯配置');
+    this.capacities=o.cupMode==='dual' ? [o.capA,o.capB] : [o.capacity];
+    this.levels=this.capacities.map(()=>0);
+    this.previous=this.levels.slice();
+    this.currentPlayer=1; this.round=1; this.gameOver=false; this.loser=0;
+    this.lastMove=null; this.now=now; this.startedAt=now(); this.duration=0;
+    if(o.cupMode==='dual') this.winTable=this.buildWinTable(o.capA,o.capB);
+  }
+  elapsed() { return this.gameOver ? this.duration : Math.max(0,Math.floor((this.now()-this.startedAt)/1000)); }
+  pour(amount,cup=0) {
+    if (this.gameOver || ![1,2].includes(amount) || !Number.isInteger(cup) || cup<0 || cup>=this.capacities.length) return null;
+    this.previous=this.levels.slice();
+    const level=this.levels[cup]+amount, overflow=level>this.capacities[cup];
+    this.lastMove={cup,amount,player:this.currentPlayer,overflow};
+    this.levels[cup]=Math.min(level,this.capacities[cup]);
+    if(overflow) { this.duration=this.elapsed(); this.gameOver=true; this.loser=this.currentPlayer; }
+    else { this.currentPlayer=3-this.currentPlayer; this.round++; }
+    return this.lastMove;
+  }
+  buildWinTable(a,b) {
+    const win=Array.from({length:a+1},()=>Array(b+1).fill(false));
+    for(let ra=0;ra<=a;ra++) for(let rb=0;rb<=b;rb++) {
+      for(const amount of [1,2]) {
+        if (ra>=amount && !win[ra-amount][rb]) win[ra][rb]=true;
+        if (rb>=amount && !win[ra][rb-amount]) win[ra][rb]=true;
+      }
+    }
+    return win;
+  }
+  aiChoice(random=Math.random) {
+    if(this.gameOver) return null;
+    const optimal=random()<.7;
+    const remaining=this.capacities.map((capacity,i)=>capacity-this.levels[i]);
+    if(remaining.length===1) {
+      const r=remaining[0];
+      if(optimal && r%3!==0) return {cup:0,amount:r%3};
+      return {cup:0,amount:r>=2 ? Math.floor(random()*2)+1 : 1};
+    }
+    const [a,b]=remaining, safe=[];
+    for(const amount of [1,2]) {
+      if(a>=amount) {
+        if(optimal && !this.winTable[a-amount][b]) return {cup:0,amount};
+        safe.push({cup:0,amount});
+      }
+      if(b>=amount) {
+        if(optimal && !this.winTable[a][b-amount]) return {cup:1,amount};
+        safe.push({cup:1,amount});
+      }
+    }
+    return safe.length ? safe[Math.floor(random()*safe.length)] : {cup:0,amount:1};
+  }
+}
+
+class FillCupSession {
+  constructor({now=Date.now,random=Math.random,setTimer=(fn,ms)=>setTimeout(fn,ms),clearTimer=id=>clearTimeout(id),onChange=()=>{},onFinish=()=>{}}={}) {
+    Object.assign(this,{now,random,setTimer,clearTimer,onChange,onFinish});
+    this.phase='menu'; this.game=null; this.generation=0; this.timer=null; this.pending=null; this.suspended=false;
+  }
+  cancel() { this.generation++; this.clearTimer(this.timer); this.timer=null; this.pending=null; }
+  schedule(callback,delay) {
+    this.cancel();
+    const token=this.generation;
+    this.pending={callback,remaining:delay,due:this.now()+delay};
+    if(this.suspended) return;
+    this.timer=this.setTimer(()=>{
+      if(token!==this.generation || this.suspended) return;
+      this.timer=null; this.pending=null; callback();
+    },delay);
+  }
+  start(options) {
+    const game=new FillCupGame(options,this.now);
+    this.cancel(); this.game=game; this.phase='playing'; this.onChange('start');
+  }
+  menu() { this.cancel(); this.game=null; this.phase='menu'; this.onChange('menu'); }
+  pour(amount,cup) {
+    if(this.suspended || this.phase!=='playing' || !this.game || (this.game.options.mode==='pve' && this.game.currentPlayer===2)) return null;
+    return this.perform(amount,cup);
+  }
+  perform(amount,cup) {
+    const result=this.game.pour(amount,cup);
+    if(!result) return null;
+    this.phase='pouring';
+    if(result.overflow) this.onFinish(3-this.game.loser);
+    this.schedule(()=>{
+      if(result.overflow) {
+        this.phase='overflow';
+        this.schedule(()=>{this.phase='finished';this.onChange('finished');},500);
+        this.onChange('overflow');
+      } else if(this.game.options.mode==='pve' && this.game.currentPlayer===2) {
+        this.phase='thinking';
+        this.schedule(()=>{const move=this.game.aiChoice(this.random);if(move) this.perform(move.amount,move.cup);},800);
+        this.onChange('thinking');
+      } else {this.phase='playing';this.onChange('playing');}
+    },520);
+    this.onChange('pour');
+    return result;
+  }
+  suspend() {
+    if(this.suspended) return;
+    this.suspended=true;
+    if(this.pending) this.pending.remaining=Math.max(0,this.pending.due-this.now());
+    this.generation++; this.clearTimer(this.timer); this.timer=null;
+  }
+  resume() {
+    if(!this.suspended) return;
+    this.suspended=false;
+    if(this.pending) { const {callback,remaining}=this.pending;this.schedule(callback,remaining); }
+    this.onChange('resume');
+  }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const {loadStats,saveStats,vibrate,pad}=window.GameUtils;
+  const $=id=>document.getElementById(id);
+  const selection={cupMode:'single',capacity:7,capA:5,capB:7};
+  let stats=normalizeStats(loadStats('fillcup_stats',null));
+  let clockId=0, audio=null, renderedGame=null, shareVersion=0;
+  let soundEnabled=!!loadStats('webFillCupSoundEnabled',loadStats('sfx_enabled',1));
+  const localSession=new FillCupSession({
+    onChange:event=>{
+      if(event==='pour' || event==='overflow') feedback(event);
+      render(); startClock();
+    },
+    onFinish:winner=>{stats=recordResult(loadStats('fillcup_stats',stats),winner);saveStats('fillcup_stats',JSON.stringify(stats));}
+  });
+  let session=localSession;
+  const online=new FillCupOnline(event=>{
+    if(!online.active)return;
+    if(event==='pour'||event==='overflow')feedback(event);
+    if(online.game!==renderedGame)closeDialogs();
+    render();startClock();
+  });
+  function isOnline(){return session===online&&online.active;}
+  function renderOnline(){
+    const active=isOnline();$('onlinePanel').hidden=!active;
+    if(!active)return;
+    $('onlineStatus').textContent=online.statusText();
+    const config=online.state?.config||online.preview?.config;
+    $('roomConfig').textContent=config?`${config.cupMode==='single'?`单杯 ${config.capacity}`:`双杯 A ${config.capA} / B ${config.capB}`} · 创建者先手`:'';
+    $('roomScores').textContent=online.state?`本房间胜场：玩家1 ${online.state.scores[0]} : ${online.state.scores[1]} 玩家2`:'';
+    $('inviteControls').hidden=!online.seat||online.state?.status!=='waiting'||online.fatal;
+    $('inviteLink').value=online.room?online.inviteURL():'';
+    $('joinRoomBtn').hidden=!!online.seat||!online.preview;
+    $('joinRoomBtn').disabled=!online.connected||online.joinRequested||online.preview?.full||online.preview?.closed||online.fatal;
+    $('onlineRetryBtn').hidden=online.connected||online.fatal;
+  }
+  function openOnline(room=''){
+    if(session!==localSession||localSession.game)return;
+    closeDialogs();session=online;online.begin({...selection},room);window.scrollTo(0,0);
+  }
+  async function invite(copyOnly){
+    if(!isOnline()||!online.room)return;
+    const room=online.room,url=online.inviteURL();
+    try{
+      if(!copyOnly&&navigator.share)await navigator.share({title:'装杯 · 邀请对战',text:'轮流倒水，谁装溢出谁输，来和我对战吧！',url});
+      else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(url);if(online.room===room&&isOnline())$('inviteNote').textContent='邀请链接已复制';}
+      else $('inviteNote').textContent='请长按或选中上方邀请链接复制';
+    }catch(error){if(error.name!=='AbortError'&&isOnline())$('inviteNote').textContent='请手动复制上方邀请链接';}
+  }
+
+  function feedback(kind) {
+    if(document.hidden) return;
+    if(loadStats('vibrate_enabled',1)) vibrate(kind==='overflow'?35:15);
+    if(!soundEnabled) return;
+    try {
+      const AudioClass=window.AudioContext||window.webkitAudioContext;
+      if(!AudioClass) return;
+      if(!audio || audio.state==='closed') audio=new AudioClass();
+      if(audio.state==='suspended') audio.resume().catch(()=>{});
+      const oscillator=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime;
+      oscillator.type='sine';
+      oscillator.frequency.setValueAtTime(kind==='overflow'?300:420,start);
+      oscillator.frequency.exponentialRampToValueAtTime(kind==='overflow'?90:760,start+.2);
+      gain.gain.setValueAtTime(.045,start);gain.gain.exponentialRampToValueAtTime(.001,start+.23);
+      oscillator.connect(gain);gain.connect(audio.destination);
+      oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+      oscillator.start(start);oscillator.stop(start+.24);
+    } catch (_) { /* 音效不可用不影响对局 */ }
+  }
+  function renderTime() {
+    if(isOnline())$('onlineStatus').textContent=online.statusText();
+    if(!session.game) return;
+    const seconds=session.game.elapsed();
+    $('timer').textContent=seconds<60?`${seconds}秒`:`${Math.floor(seconds/60)}:${pad(seconds%60)}`;
+  }
+  function startClock() {
+    clearInterval(clockId);clockId=0;renderTime();
+    if(session.game && !session.game.gameOver && !document.hidden && !session.suspended) clockId=setInterval(renderTime,1000);
+  }
+  function renderMenu() {
+    document.querySelectorAll('[data-cup-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.cupMode===selection.cupMode)));
+    document.querySelectorAll('[data-option]').forEach(b=>b.setAttribute('aria-pressed',String(selection[b.dataset.option]===Number(b.dataset.value))));
+    $('singleOptions').hidden=selection.cupMode==='dual';$('dualOptions').hidden=selection.cupMode==='single';
+    $('menuRules').textContent=selection.cupMode==='dual'?'两人轮流选择一个杯子，倒 1 或 2 小杯水。两杯容量可以相同。':'两人轮流往杯子里倒水，每次倒 1 或 2 小杯。';
+    $('statsText').textContent=`战绩：胜 ${stats.wins}　负 ${stats.losses} · 最高连胜 ${stats.maxStreak}`;
+  }
+  function capacityLabel(game) {
+    return game.capacities.length===1?`容量 ${game.capacities[0]} 小杯`:`杯 A：${game.capacities[0]} · 杯 B：${game.capacities[1]}`;
+  }
+  function playerName(player) {return isOnline()?`玩家${player}（${player===online.seat?'你':'对方'}）`:session.game.options.mode==='pve'?(player===1?'你':'AI'):`玩家${player}`;}
+  function cupMarkup(capacity,index,isDual) {
+    const max=Math.max(...session.game.capacities),width=isDual?100*Math.max(.55,capacity/max):100;
+    const left=90-width/2,right=90+width/2,bottomLeft=left+10,bottomRight=right-10;
+    const side=isDual && index===0?'left':'right';
+    const ticks=Array.from({length:capacity},(_,i)=>{
+      const n=i+1,y=254-n/capacity*232;
+      const x=side==='left'?left-4:right+4;
+      return `<line x1="${x}" x2="${x+(side==='left'?-5:5)}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.3)"/><text x="${x+(side==='left'?-9:9)}" y="${y+3}" text-anchor="${side==='left'?'end':'start'}" fill="#99a5bd" font-size="10">${n}</text>`;
+    }).join('');
+    return `<figure class="cup-figure${index===1?' cup-b':''}" data-figure="${index}"><svg class="cup-svg" viewBox="0 0 180 280" role="img" aria-label="${isDual?'杯 '+(index===0?'A':'B'):'杯子'}，容量${capacity}">
+      <defs><clipPath id="glassClip${index}"><path d="M${left} 22 L${right} 22 L${bottomRight} 254 L${bottomLeft} 254 Z"/></clipPath><linearGradient id="waterGradient${index}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4ecca3"/><stop offset="1" stop-color="#00d9a5"/></linearGradient></defs>
+      <path d="M${left} 22 L${right} 22 L${bottomRight} 254 L${bottomLeft} 254 Z" fill="rgba(255,255,255,.045)"/>
+      <g clip-path="url(#glassClip${index})"><rect class="liquid-total" x="${left}" y="22" width="${width}" height="232" fill="#a4a7ca" opacity=".8" style="transform:scaleY(0)"/><rect class="liquid-old" x="${left}" y="22" width="${width}" height="232" fill="url(#waterGradient${index})" style="transform:scaleY(0)"/></g>
+      <path class="glass-edge" d="M${left} 22 L${bottomLeft} 254 L${bottomRight} 254 L${right} 22" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linejoin="round"/>
+      <ellipse cx="90" cy="22" rx="${width/2}" ry="4" fill="none" stroke="rgba(255,255,255,.25)"/>
+      <path d="M${left+8} 36 L${bottomLeft+6} 236" stroke="rgba(255,255,255,.1)" stroke-width="3"/>${ticks}
+      <path class="pour-stream" d="M90 0 L90 90" stroke="#a4a7ca" stroke-width="7" stroke-linecap="round"/>
+      <g class="splash" fill="none" stroke="#4ecca3" stroke-width="3" stroke-linecap="round"><path d="M${left} 25 q-18 -20 -24 12 M${right} 25 q18 -20 24 12 M76 20 l-8 -16 M103 20 l9 -15"/></g>
+    </svg><figcaption>${isDual?'杯 '+(index===0?'A':'B'):'当前水位'} <span data-level="${index}">0 / ${capacity}</span><span class="cup-remaining" data-remaining="${index}">还能装 ${capacity} 小杯</span></figcaption></figure>`;
+  }
+  function pourButtons(cup,player) {
+    return [1,2].map(amount=>`<button class="pour-btn" data-cup="${cup}" data-player="${player}" data-pour="${amount}" aria-label="${session.game.capacities.length===2?'杯'+(cup===0?'A':'B'):playerName(player)}倒${amount}小杯">倒 ${amount} 杯</button>`).join('');
+  }
+  function buildBoard() {
+    const game=session.game,dual=game.capacities.length===2,board=$('board');
+    board.className=dual?'board dual':'board';
+    if(dual) {
+      board.innerHTML=`<div class="player-panel"><span data-player-label="1">${playerName(1)}</span><span class="opponent" data-player-label="2">${playerName(2)}</span></div>${game.capacities.map((c,i)=>cupMarkup(c,i,true)).join('')}<div class="dual-actions">${pourButtons(0,0)}</div><div class="dual-actions cup-b">${pourButtons(1,0)}</div>`;
+    } else {
+      const panel=player=>`<div class="player-panel player${player}" data-panel="${player}"><span class="player-name">${playerName(player)}</span><p class="player-status" data-status="${player}"></p><div class="player-actions">${pourButtons(0,player)}</div></div>`;
+      board.innerHTML=panel(1)+cupMarkup(game.capacities[0],0,false)+panel(2);
+    }
+    board.querySelectorAll('[data-pour]').forEach(button=>button.addEventListener('click',()=>{
+      if(document.querySelector('dialog[open]') || session.suspended) return;
+      const player=Number(button.dataset.player);
+      if(player && player!==session.game.currentPlayer) return;
+      if(isOnline()&&(!online.canPour()||(player&&player!==online.seat)))return;
+      session.pour(Number(button.dataset.pour),Number(button.dataset.cup));
+    }));
+    renderedGame=game;
+  }
+  function render() {
+    const game=session.game;
+    renderOnline();
+    $('menuScreen').hidden=!!game||isOnline();$('playScreen').hidden=!game;$('helpBtn').hidden=!game;
+    $('backLink').setAttribute('aria-label',game||isOnline()?'返回模式选择':'返回网站首页');
+    if(!game) {renderedGame=null;$('capacityText').textContent='谁装溢出谁输';renderMenu();return;}
+    if(renderedGame!==game) buildBoard();
+    $('capacityText').textContent=capacityLabel(game);
+    $('roundText').textContent=`第 ${game.round} 回合`;
+    $('waterText').textContent=game.capacities.length===1?`${game.levels[0]} / ${game.capacities[0]}`:`A ${game.levels[0]}/${game.capacities[0]} · B ${game.levels[1]}/${game.capacities[1]}`;
+    const actor=game.lastMove?.player || game.currentPlayer;
+    const text=game.gameOver?`${playerName(game.loser)}倒水溢出` : session.phase==='thinking'?'AI 思考中…' : session.phase==='pouring'?`${playerName(actor)}正在倒水…`:`轮到${playerName(game.currentPlayer)}倒水`;
+    $('turnText').textContent=game.aborted?'本局中止，不计胜负':isOnline()&&(!online.synced||online.pending||online.state?.paused||online.fatal)?online.statusText():text;
+    $('turnText').className=`turn-text${(session.phase==='pouring'?actor:game.currentPlayer)===2?' player2':''}`;
+    $('board').classList.toggle('snapshot',isOnline()&&online.skipAnimation);
+    $('helpBtn').disabled=session.phase!=='playing';
+    document.querySelectorAll('[data-pour]').forEach(button=>{
+      const player=Number(button.dataset.player);
+      button.disabled=session.suspended || session.phase!=='playing' || game.gameOver || (player!==0 && player!==game.currentPlayer) || (game.options.mode==='pve' && game.currentPlayer===2) || (isOnline()&&(!online.canPour()||(player!==0&&player!==online.seat)));
+    });
+    document.querySelectorAll('[data-panel]').forEach(panel=>{
+      const player=Number(panel.dataset.panel),active=player===game.currentPlayer;
+      panel.classList.toggle('active',active&&!game.gameOver);
+      panel.querySelector('.player-status').textContent=game.gameOver?'已结束':active?(session.phase==='thinking'?'思考中…':session.phase==='playing'?'轮到你':'请稍候'):'等待对方';
+    });
+    game.capacities.forEach((capacity,i)=>{
+      const figure=document.querySelector(`[data-figure="${i}"]`),current=game.lastMove?.cup===i;
+      figure.classList.toggle('pouring',current&&session.phase==='pouring');
+      figure.classList.toggle('overflow',current&&game.gameOver&&['overflow','finished'].includes(session.phase));
+      figure.querySelector('.liquid-total').style.transform=`scaleY(${game.levels[i]/capacity})`;
+      figure.querySelector('.liquid-old').style.transform=`scaleY(${game.previous[i]/capacity})`;
+      figure.querySelector('[data-level]').textContent=`${game.levels[i]} / ${capacity}`;
+      figure.querySelector('[data-remaining]').textContent=game.levels[i]===capacity?'已装满，继续倒水会溢出':`还能装 ${capacity-game.levels[i]} 小杯`;
+      figure.querySelector('svg').setAttribute('aria-label',`${game.capacities.length===2?'杯'+(i===0?'A':'B'):'杯子'}，已装${game.levels[i]}，容量${capacity}`);
+    });
+    renderTime();
+    if(session.phase==='finished' && !document.hidden && !session.suspended) showResult();
+  }
+  function showResult() {
+    const game=session.game;
+    const won=isOnline()?game.loser!==online.seat:game.loser===2;
+    $('resultDialog').className=won&&!game.aborted?'win':'loss';
+    $('resultTitle').textContent=game.aborted?'本局中止':isOnline()?(won?'你赢了！':'你输了！'):game.options.mode==='pvp'?`玩家${3-game.loser} 赢了！`:won?'你赢了！':'你输了！';
+    $('resultDetails').textContent=game.aborted?'对方离开或断线超过60秒，本局不计胜负。':`${game.capacities.length===2?'杯 '+(game.lastMove.cup===0?'A':'B'):'杯子'}在第 ${game.round} 回合溢出。${capacityLabel(game)} · 用时 ${game.elapsed()} 秒`;
+    $('restartBtn').hidden=!!game.aborted;
+    $('restartBtn').disabled=isOnline()&&(!online.connected||!online.synced||online.state.closed||online.state.online.some(p=>!p)||!!online.state.ready[online.seat-1]||!!online.pending);
+    $('restartBtn').textContent=isOnline()&&online.state.ready[online.seat-1]?'等待对方同意':isOnline()&&online.state.ready[2-online.seat]?'同意再来一局':'再来一局';
+    if($('rulesDialog').open)$('rulesDialog').close();
+    if(!$('resultDialog').open) {$('shareNote').textContent='';$('resultDialog').showModal();}
+  }
+  function closeDialogs() {shareVersion++;document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());}
+  function start(mode) {
+    if(isOnline()||session.phase!=='menu') return;
+    closeDialogs();session.start({...selection,mode});window.scrollTo(0,0);
+  }
+  function menu() {
+    if(isOnline()){
+      if(online.state?.status==='playing'&&!confirm('确定离开对战？本局将中止，不计胜负。'))return;
+      online.leave();session=localSession;localSession.suspended=false;$('inviteNote').textContent='';
+    }
+    closeDialogs();stats=normalizeStats(loadStats('fillcup_stats',stats));session.menu();window.scrollTo(0,0);
+  }
+  function syncStats() {stats=normalizeStats(loadStats('fillcup_stats',null));if(!session.game) renderMenu();}
+  for(const [id,key,values] of [['capacityOptions','capacity',SINGLE_CAPACITIES],['capAOptions','capA',DUAL_CAPACITIES],['capBOptions','capB',DUAL_CAPACITIES]]) {
+    for(const value of values) {
+      const button=document.createElement('button');button.className='choice';button.textContent=`${value}杯`;button.dataset.option=key;button.dataset.value=value;
+      button.addEventListener('click',()=>{if(session.phase==='menu'){selection[key]=value;renderMenu();}});$(id).appendChild(button);
+    }
+  }
+  document.querySelectorAll('[data-cup-mode]').forEach(button=>button.addEventListener('click',()=>{if(session.phase==='menu'){selection.cupMode=button.dataset.cupMode;renderMenu();}}));
+  $('pveBtn').addEventListener('click',()=>start('pve'));$('pvpBtn').addEventListener('click',()=>start('pvp'));
+  const ONLINE_ENABLED=!(window.SITE&&window.SITE.online===false);
+  $('onlineBtn').hidden=!ONLINE_ENABLED;
+  $('onlineBtn').addEventListener('click',()=>openOnline());
+  $('joinRoomBtn').addEventListener('click',()=>online.join());$('onlineRetryBtn').addEventListener('click',()=>online.resume());
+  $('inviteCopyBtn').addEventListener('click',()=>invite(true));$('inviteShareBtn').addEventListener('click',()=>invite(false));
+  $('onlineLeaveBtn').addEventListener('click',menu);
+  $('backLink').addEventListener('click',event=>{if(session.game||isOnline()){event.preventDefault();menu();}});
+  $('menuBtn').addEventListener('click',menu);$('rulesMenuBtn').addEventListener('click',menu);
+  $('restartBtn').addEventListener('click',()=>{if(isOnline()){online.rematch();return;}if(session.phase==='finished'){const options=session.game.options;closeDialogs();session.start(options);}});
+  $('helpBtn').addEventListener('click',()=>{
+    if(session.phase!=='playing' || $('rulesDialog').open) return;
+    $('rulesMode').textContent=session.game.capacities.length===2?'双杯：两人每回合只选一个杯子倒水，杯子容量可以相同。':'单杯：两人轮流往同一个杯子倒水。';
+    $('rulesDialog').showModal();
+  });
+  $('closeRulesBtn').addEventListener('click',()=>$('rulesDialog').close());
+  $('resultDialog').addEventListener('cancel',event=>event.preventDefault());
+  $('soundEnabled').checked=soundEnabled;
+  $('soundEnabled').addEventListener('change',event=>{
+    soundEnabled=event.target.checked;saveStats('webFillCupSoundEnabled',soundEnabled);
+    if(!soundEnabled&&audio) audio.suspend().catch(()=>{});
+  });
+  async function share(copyOnly) {
+    if(session.phase!=='finished') return;
+    const version=shareVersion,game=session.game;
+    const data={title:'装杯 · 数字迷城',text:`${$('resultTitle').textContent} ${capacityLabel(game)}，${game.aborted?'本局中止，不计胜负':`第${game.round}回合溢出`}。轮流倒水，谁装溢出谁输，一起来试试！`,url:new URL('./',location.href).href};
+    const note=text=>{if(version===shareVersion&&$('resultDialog').open)$('shareNote').textContent=text;};
+    try {
+      if(!copyOnly&&navigator.share) await navigator.share(data);
+      else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(copyOnly?data.url:`${data.text}\n${data.url}`);note('链接已复制');}
+      else note('请复制地址栏链接分享给好友');
+    } catch(error) {if(error.name!=='AbortError') note('请复制地址栏链接分享给好友');}
+  }
+  $('shareBtn').addEventListener('click',()=>share(false));$('copyBtn').addEventListener('click',()=>share(true));
+  function suspend() {session.suspend();clearInterval(clockId);clockId=0;if(audio) audio.suspend().catch(()=>{});}
+  function resume() {if(!document.hidden){syncStats();session.resume();render();startClock();}}
+  document.addEventListener('visibilitychange',()=>document.hidden?suspend():resume());
+  window.addEventListener('pagehide',()=>{suspend();if(audio) audio.close().catch(()=>{});});
+  window.addEventListener('pageshow',resume);
+  window.addEventListener('storage',event=>{if(event.key==='fillcup_stats'||event.key===null) syncStats();});
+  render();
+  const invitedRoom=new URLSearchParams(location.search).get('room');
+  if(invitedRoom&&ONLINE_ENABLED)openOnline(invitedRoom);
+  if(document.hidden) session.suspend();
+})();
+</script>
+</body>
+</html>

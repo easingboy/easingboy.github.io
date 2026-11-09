@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>算24</title>
+<link rel="stylesheet" href="../shared/style.css" />
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<style>
+  :root { --accent: #e94560; --text: #fff; --text-dim: #a0a5b8; --secondary: #0f3460; --success: #22c55e; --warning: #fbbf24; }
+  body { background: linear-gradient(180deg, #16213e, #1a1a2e 70%, #0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; }
+  button { font: inherit; }
+  button, a { touch-action: manipulation; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  [hidden] { display: none !important; }
+  .game-shell { width: min(100%, 440px); margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 10px; padding: 0 0 14px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; background: var(--secondary); border: 0; }
+  .title-group { display: flex; justify-content: center; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+  h1 { margin: 0; font-size: 26px; line-height: 1.3; letter-spacing: 2px; }
+  .level { font-size: 13px; font-weight: 600; color: var(--success); overflow-wrap: anywhere; }
+  .status-bar { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .score-group { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; line-height: 1.7; }
+  .score { color: var(--gold); }
+  .score b { font-weight: 600; }
+  #timer { white-space: nowrap; }
+  .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 72px)); justify-content: space-between; gap: 12px; margin-top: 24px; }
+  .number-card { padding: 4px; min-width: 0; width: 100%; aspect-ratio: 1; border-radius: 14px; border: 1.5px solid transparent; background: var(--secondary); color: #fff; font-size: 30px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .number-card.selected { background: var(--accent); border-color: #f3788b; box-shadow: 0 0 16px rgba(233,69,96,.25); }
+  .number-card.small { font-size: 19px; }
+  .number-card.tiny { font-size: 14px; }
+  .number-card.empty { visibility: hidden; }
+  .number-card.final { background: rgba(34,197,94,.18); color: var(--success); border-color: var(--success); }
+  .operators { display: grid; grid-template-columns: repeat(4, 56px); justify-content: space-between; gap: 12px; margin-top: 20px; }
+  .operator { width: 56px; height: 56px; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; background: #16213e; color: #fff; font-size: 28px; cursor: pointer; }
+  .operator.selected { background: var(--warning); color: #1a1a2e; border-color: var(--warning); }
+  .number-card:hover:not(:disabled), .operator:hover:not(:disabled) { filter: brightness(1.12); }
+  .number-card:active:not(:disabled), .operator:active:not(:disabled) { transform: scale(.96); }
+  .number-card:disabled, .operator:disabled { cursor: default; }
+  .message { height: 62px; overflow-y: auto; margin: 8px 0; display: flex; align-items: center; justify-content: center; text-align: center; color: var(--text-dim); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+  .message.hint { color: var(--warning); }
+  .message.error { color: #fb7185; }
+  .history-panel { background: rgba(15,52,96,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; height: 144px; overflow: hidden; display: flex; flex-direction: column; }
+  .history-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .history-header h2 { font-size: 12px; font-weight: 400; color: var(--text-dim); margin: 0; }
+  .history-header span { font-size: 11px; color: #77869e; }
+  .history-list { overflow-y: auto; flex: 1; min-height: 0; scrollbar-width: thin; scrollbar-color: #495774 transparent; }
+  .history-row { display: flex; align-items: center; gap: 16px; min-height: 32px; padding: 3px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .history-row .no { font-size: 11px; color: var(--text-dim); flex: none; }
+  .history-row .expression { overflow-wrap: anywhere; }
+  .empty-history { font-size: 12px; line-height: 1.7; margin: 28px 12px; color: var(--text-dim); text-align: center; }
+  .actions { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-top: 16px; }
+  .action { min-width: 0; min-height: 44px; padding: 0 4px; border: 1px solid transparent; border-radius: 22px; background: var(--secondary); color: #fff; cursor: pointer; font-size: 14px; }
+  .action.hint { background: var(--success); color: #0a2312; font-weight: 600; }
+  .action.skip { background: var(--accent); }
+  .action:hover:not(:disabled) { filter: brightness(1.12); }
+  .action:disabled { opacity: .4; cursor: default; }
+  .footer-note { margin: 18px 0 0; font-size: 11px; color: #7d849b; text-align: center; line-height: 1.7; }
+  dialog { width: min(400px, calc(100% - 32px)); max-height: calc(100svh - 40px); padding: 24px; background: #16213e; color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: 18px; }
+  dialog::backdrop { background: rgba(0,0,0,.82); }
+  dialog h2 { font-size: 22px; margin: 0 0 18px; }
+  dialog p, dialog li { font-size: 14px; line-height: 1.8; color: #b7bdcc; }
+  dialog ol { padding-left: 20px; }
+  .example { padding: 12px; background: rgba(15,52,96,.65); border-radius: 10px; }
+  .sound-option { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--text-dim); }
+  .sound-option input { width: 18px; height: 18px; accent-color: var(--success); }
+  .btn { min-height: 44px; border-radius: 22px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #f05a73; border-color: #f05a73; }
+  .dialog-footer { margin-top: 20px; text-align: center; }
+  #resultDialog { text-align: center; }
+  .result-symbol { font-size: 48px; color: var(--success); line-height: 1; margin-bottom: 18px; }
+  #resultDialog.win h2 { color: var(--success); }
+  #resultDialog.skipped .result-symbol, #resultDialog.skipped h2 { color: var(--warning); }
+  .level-score { margin: 12px 0; font-size: 26px; font-weight: 600; color: var(--gold); }
+  .result-details { font-size: 14px; line-height: 2; color: var(--text-dim); }
+  .result-details b { color: #fff; }
+  .result-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+  .text-button, .home-link { display: inline-block; min-height: 44px; padding: 10px; background: none; border: 0; color: var(--text-dim); text-decoration: none; font-size: 13px; cursor: pointer; }
+  .share-note { min-height: 24px; margin: 0; font-size: 12px; }
+  @media (max-width: 360px) { .game-header { gap: 6px; } h1 { font-size: 24px; } .number-card.small { font-size: 17px; } .actions { gap: 6px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="game-header">
+    <a id="backLink" class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+    <div class="title-group"><h1>算24</h1><span id="levelText" class="level">第1关</span></div>
+    <button id="helpBtn" class="help-btn" aria-label="游戏规则">?</button>
+  </header>
+  <div class="status-bar"><div class="score-group"><span class="score">分数 <b id="totalScore">0</b></span><span>最高 <b id="highScore">0</b></span></div><time id="timer" aria-label="本关用时">00:00</time></div>
+  <section id="cards" class="cards" aria-label="四个数字槽位"></section>
+  <div id="operators" class="operators" aria-label="选择运算符"></div>
+  <p id="message" class="message" role="status">先选数字，再选运算符，最后选另一个数字</p>
+  <section class="history-panel" id="historyPanel" aria-labelledby="historyTitle">
+    <header class="history-header"><h2 id="historyTitle">操作步骤</h2><span id="stepCount">0 / 3</span></header>
+    <div id="historyList" class="history-list"><p class="empty-history">选两个数字和一个运算符开始</p></div>
+  </section>
+  <div class="actions" id="actions">
+    <button class="action" id="undoBtn">撤销</button><button class="action" id="resetBtn">重置</button><button class="action hint" id="hintBtn">提示</button><button class="action skip" id="skipBtn">跳过</button>
+  </div>
+  <p class="footer-note">用完四个数字，最终结果为 24 即可通关<br>退出保留关卡与积分，不保存当前运算步骤</p>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">算24 · 游戏规则</h2>
+  <ol><li>用四个数字和加、减、乘、除得到 24，每张数字卡必须用且只用一次。</li><li>先选数字 A，再选运算符，最后点数字 B，即计算 A 与 B。减法和除法按你的点击顺序。</li><li>结果留在 B 的位置，A 留空，其他数字不移动。结果会自动选中，方便继续计算。</li></ol>
+  <p class="example">例如 4 × 3 = 12，再 12 × 2 = 24，最后 24 × 1 = 24。必须用完四张卡，不能只算到中途的 24。</p>
+  <p>撤销恢复上一步；重置恢复本题四个数，不换题、不重置计时。最终结果不是 24，会在 1.2 秒后自动撤销最后一步。</p>
+  <p>提示给出原题的一种完整解法，不扣分。没有倒计时限制，通关越快奖励越高；跳过不加分，下一关继续。</p>
+  <label class="sound-option"><input id="soundEnabled" type="checkbox" checked>操作音效</label>
+  <div class="dialog-footer"><button class="btn primary" id="closeRulesBtn">知道了</button></div>
+</dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle">
+  <div id="resultSymbol" class="result-symbol" aria-hidden="true">✓</div>
+  <h2 id="resultTitle">本关通过</h2><div class="level-score" id="levelScore"></div><div class="result-details" id="resultDetails"></div>
+  <div class="result-buttons"><button id="nextLevelBtn" class="btn primary">下一关</button><button id="shareBtn" class="btn">分享成绩</button></div>
+  <button id="restartBtn" class="text-button">从第1关开始</button><a class="home-link" href="../../index.html">返回首页</a>
+  <p id="shareNote" class="share-note" aria-live="polite"></p>
+</dialog>
+<script src="../shared/utils.js"></script>
+<script id="game24-engine">
+// 与 js/game24/Calc24Data.js 保持题目和顺序一致，测试逐项核对。
+const PRESETS = [
+  [4,3,2,1],[6,8,1,1],[5,7,2,1],[5,3,9,1],[10,3,6,1],[10,6,7,2],[6,9,2,9],[1,2,2,9],[7,7,5,2],[9,4,8,8],
+  [9,4,6,1],[2,10,6,9],[4,6,3,5],[9,6,6,1],[7,4,7,8],[4,9,10,8],[10,5,5,9],[1,4,1,4],[3,8,10,6],[2,9,6,2],
+  [4,8,9,2],[7,9,8,3],[3,9,3,10],[2,9,5,2],[7,5,9,2],[7,4,4,5],[6,1,8,5],[10,4,10,3],[1,4,5,8],[2,7,5,5],
+  [4,6,8,5],[1,5,5,2],[8,4,4,9],[3,3,7,3],[7,6,3,7],[2,3,3,3],[2,8,1,2],[3,2,10,3],[6,6,8,9],[4,4,10,4],
+  [8,1,10,8],[7,3,5,5],[6,6,7,2],[8,9,8,2],[7,2,10,10],[5,5,2,2],[3,3,3,1],[3,5,2,3],[3,4,2,2],[8,8,8,5],
+  [4,4,4,7],[3,3,3,10],[4,4,4,4],[5,8,2,8],[2,6,7,2],[3,4,3,3],[4,4,4,1],[9,5,5,3],[1,8,5,1],[10,8,4,6],
+  [5,7,7,9],[9,6,9,5],[7,6,7,10],[8,3,1,3],[5,7,8,10],[5,2,3,3],[5,4,4,10],[1,5,7,9],[1,9,1,4],[10,3,3,2],
+  [1,5,9,4],[7,3,5,3],[9,1,6,7],[7,3,1,7],[2,2,7,5],[1,1,2,9],[9,1,4,7],[6,9,5,6],[6,4,1,5],[5,6,3,5],
+  [6,10,6,6],[5,2,8,8],[6,4,4,1],[6,1,4,6],[9,10,3,9],[2,5,3,2],[7,9,10,1],[10,3,10,6],[2,5,6,6],[8,10,8,3],
+  [5,9,5,1],[7,4,4,10],[3,3,3,5],[1,1,5,3],[7,8,10,8],[6,9,2,2],[2,2,7,6],[8,4,8,5],[1,1,7,2],[4,4,4,10],
+  [1,7,7,4],[2,7,2,2],[2,5,2,2],[2,2,9,2],[1,1,4,4],[4,4,3,3],[2,7,2,7],[3,1,1,10],[3,3,3,4],[4,4,3,4],
+  [4,4,2,2],[10,10,4,4],[1,5,5,5],[5,2,10,10],[8,5,5,4],[8,2,10,1],[8,5,2,2],[7,7,9,10],[4,5,5,7],[6,1,3,4],
+  [4,1,10,1],[10,4,10,7],[1,9,3,10],[4,3,7,8],[4,9,2,4],[10,5,1,5],[6,1,10,4],[2,9,10,2],[1,8,1,1],[7,10,9,5],
+  [10,8,7,10],[4,4,10,3],[1,10,1,7],[9,10,10,3],[10,5,7,7],[3,10,5,10],[1,6,6,6],[6,9,8,10],[6,7,9,5],[6,7,7,5],
+  [9,7,7,3],[7,10,4,5],[5,8,2,7],[10,8,8,3],[5,2,4,5],[7,2,1,7],[8,8,8,10],[10,10,2,4],[8,3,8,3],[2,2,10,3],
+  [2,8,5,5],[8,7,9,2],[6,8,8,8],[7,4,7,4],[4,4,5,4],[4,9,4,4],[1,8,1,8],[7,8,9,8],[9,7,4,9],[3,3,7,7],
+  [2,2,2,9],[6,9,9,10],[1,4,5,6],[2,7,7,10],[5,7,10,10],[1,3,7,8],[6,6,5,9],[6,6,1,8],[6,3,3,6],[5,5,3,3],
+  [2,2,3,5],[5,8,5,8],[3,7,3,5],[3,3,3,3],[10,10,5,5],[7,7,4,7],[9,4,5,9],[7,2,10,2],[5,10,5,2],[4,4,4,3],
+  [6,9,1,1],[6,3,6,10],[9,9,4,8],[2,3,10,10],[7,2,7,4],[6,10,6,7],[8,5,6,6],[3,3,3,9],[5,9,9,5],[8,8,7,10],
+  [2,2,2,5],[10,6,10,7],[6,6,6,5],[5,5,5,5],[6,6,6,10],[2,2,2,7]
+];
+const OPERATIONS = ['+', '-', '×', '÷'];
+
+function solve24(numbers) {
+  function search(nodes) {
+    if (nodes.length === 1) return Math.abs(nodes[0].value - 24) < 1e-6 ? nodes[0].expr : null;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue;
+        const a = nodes[i], b = nodes[j];
+        const remaining = nodes.filter((_, k) => k !== i && k !== j);
+        const choices = [
+          { value: a.value + b.value, expr: `(${a.expr}+${b.expr})` },
+          { value: a.value - b.value, expr: `(${a.expr}-${b.expr})` },
+          { value: a.value * b.value, expr: `(${a.expr}×${b.expr})` }
+        ];
+        if (Math.abs(b.value) > 1e-6) choices.push({ value: a.value / b.value, expr: `(${a.expr}÷${b.expr})` });
+        for (const choice of choices) {
+          const result = search([...remaining, choice]);
+          if (result) return result;
+        }
+      }
+    }
+    return null;
+  }
+  return search(numbers.map(n => ({ value: n, expr: String(n) })));
+}
+
+function formatNumber(num) {
+  if (Number.isInteger(num)) return String(num);
+  const rounded = Math.round(num * 1000) / 1000;
+  const str = String(rounded);
+  return Number.isInteger(rounded) || str.length <= 6 ? str : rounded.toFixed(2);
+}
+
+class Game24Game {
+  constructor(progress) {
+    const p = progress && typeof progress === 'object' ? progress : {};
+    const integer = (value, fallback, min) => Number.isSafeInteger(value) && value >= min ? value : fallback;
+    this.highScore = integer(p.highScore, 0, 0);
+    this.maxLevel = integer(p.maxLevel, 1, 1);
+    this.savedLevel = integer(p.savedLevel, 1, 1);
+    this.totalScore = integer(p.totalScore, 0, 0);
+    this.usedPresetIndex = Math.min(PRESETS.length, integer(p.usedPresetIndex, 0, 0));
+    this.startLevel(this.savedLevel);
+  }
+
+  startLevel(level) {
+    this.level = level;
+    this.roundPresetIndex = this.usedPresetIndex;
+    if (this.usedPresetIndex < PRESETS.length) {
+      this.numbers = PRESETS[this.usedPresetIndex++].slice();
+      this.solution = solve24(this.numbers);
+    } else {
+      this.solution = null;
+      for (let attempt = 0; attempt < 200 && !this.solution; attempt++) {
+        this.numbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 10) + 1);
+        this.solution = solve24(this.numbers);
+      }
+      if (!this.solution) { this.numbers = [4,3,2,1]; this.solution = solve24(this.numbers); }
+    }
+    this.startedAt = Date.now();
+    this.levelTime = 0;
+    this.levelScore = 0;
+    this.status = 'playing';
+    this.reset();
+  }
+
+  elapsed() { return this.finished() ? this.levelTime : Math.max(0, Math.floor((Date.now() - this.startedAt) / 1000)); }
+  finished() { return this.status === 'won' || this.status === 'skipped'; }
+  clearSelection() { this.selected = -1; this.op = null; }
+
+  selectCard(index) {
+    if (this.status !== 'playing' || !Number.isInteger(index) || index < 0 || index > 3 || this.cards[index] === null) return {};
+    if (this.selected === index) this.clearSelection();
+    else if (this.selected === -1 || !this.op) this.selected = index;
+    else return this.calculate(this.selected, this.op, index);
+    return {};
+  }
+
+  selectOp(op) {
+    if (this.status !== 'playing' || !OPERATIONS.includes(op)) return {};
+    if (this.selected === -1) return { message: '请先选择一个数字' };
+    this.op = this.op === op ? null : op;
+    return {};
+  }
+
+  calculate(aIndex, op, bIndex) {
+    if (this.status !== 'playing' || aIndex === bIndex || ![aIndex,bIndex].every(i => Number.isInteger(i) && i >= 0 && i < 4 && this.cards[i] !== null) || !OPERATIONS.includes(op)) return {};
+    const a = this.cards[aIndex], b = this.cards[bIndex];
+    if (op === '÷' && Math.abs(b) < 1e-9) { this.clearSelection(); return { message: '不能除以0' }; }
+    const result = op === '+' ? a + b : op === '-' ? a - b : op === '×' ? a * b : a / b;
+    this.history.push({ cards: this.cards.slice(), step: `${formatNumber(a)} ${op === '-' ? '−' : op} ${formatNumber(b)} = ${formatNumber(result)}` });
+    this.cards[aIndex] = null;
+    this.cards[bIndex] = result;
+    this.op = null;
+    const remaining = this.cards.filter(n => n !== null);
+    if (remaining.length > 1) { this.selected = bIndex; return {}; }
+    this.selected = -1;
+    if (Math.abs(result - 24) < 1e-6) {
+      this.finish(true);
+      return { won: true };
+    }
+    this.status = 'retrying';
+    return { retry: true, message: `结果为 ${formatNumber(result)}，不等于24；即将撤销最后一步` };
+  }
+
+  undo() {
+    if (this.finished()) return {};
+    if (!this.history.length) return { message: '没有可撤销的操作' };
+    this.cards = this.history.pop().cards.slice();
+    this.clearSelection();
+    this.status = 'playing';
+    return {};
+  }
+
+  reset() {
+    if (this.finished()) return;
+    this.cards = this.numbers.slice();
+    this.history = [];
+    this.clearSelection();
+    this.status = 'playing';
+  }
+
+  finish(won) {
+    if (this.finished()) return;
+    this.levelTime = this.elapsed();
+    this.status = won ? 'won' : 'skipped';
+    this.clearSelection();
+    this.levelScore = 0;
+    if (won) {
+      const timeBonus = this.levelTime <= 15 ? 80 : this.levelTime <= 30 ? 50 : this.levelTime <= 60 ? 20 : 0;
+      this.levelScore = this.level * (100 + timeBonus);
+      this.totalScore += this.levelScore;
+      this.highScore = Math.max(this.highScore, this.totalScore);
+      this.maxLevel = Math.max(this.maxLevel, this.level);
+    }
+    this.savedLevel = this.level + 1;
+  }
+
+  skip() { this.finish(false); }
+  nextLevel() { if (this.finished()) this.startLevel(this.savedLevel); }
+  restart() { this.savedLevel = 1; this.usedPresetIndex = 0; this.totalScore = 0; this.startLevel(1); }
+  progress() {
+    return { highScore: this.highScore, maxLevel: this.maxLevel, savedLevel: this.savedLevel, totalScore: this.totalScore, usedPresetIndex: this.finished() ? this.usedPresetIndex : this.roundPresetIndex };
+  }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const { loadStats, saveStats, vibrate, pad } = window.GameUtils;
+  const $ = id => document.getElementById(id);
+  const initialProgress = loadStats('game24Progress', null);
+  let checkpoint = JSON.stringify(initialProgress);
+  let game = new Game24Game(initialProgress);
+  let rollbackId = 0, messageId = 0, clockId = 0, revision = 0, lastTime = -1;
+  let audio = null;
+  let soundEnabled = loadStats('webGame24SoundEnabled', true) !== false;
+
+  function sound(kind) {
+    if (!soundEnabled) return;
+    try {
+      const AudioClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioClass) return;
+      if (!audio || audio.state === 'closed') audio = new AudioClass();
+      if (audio.state === 'suspended') audio.resume().catch(() => {});
+      const notes = kind === 'win' ? [523,659,784] : [kind === 'operator' ? 520 : 720];
+      notes.forEach((freq, i) => {
+        const oscillator = audio.createOscillator(), gain = audio.createGain();
+        const start = audio.currentTime + i * .12;
+        oscillator.frequency.value = freq;
+        gain.gain.setValueAtTime(.035, start);
+        gain.gain.exponentialRampToValueAtTime(.001, start + .1);
+        oscillator.connect(gain); gain.connect(audio.destination);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        oscillator.start(start); oscillator.stop(start + .11);
+      });
+    } catch (_) { /* 音频不可用不影响计算 */ }
+  }
+
+  function cancelRollback() { revision++; clearTimeout(rollbackId); rollbackId = 0; }
+  function clearMessage() { clearTimeout(messageId); messageId = 0; $('message').className = 'message'; $('message').textContent = '先选数字，再选运算符，最后选另一个数字'; }
+  function message(text, type = 'hint') {
+    clearTimeout(messageId);
+    $('message').className = `message ${type}`;
+    $('message').textContent = text;
+    messageId = setTimeout(clearMessage, 2500);
+  }
+  function persist() {
+    saveStats('game24Progress', game.progress());
+    checkpoint = JSON.stringify(loadStats('game24Progress', null));
+  }
+  function syncCheckpoint() {
+    const saved = loadStats('game24Progress', null);
+    const snapshot = JSON.stringify(saved);
+    if (snapshot === checkpoint) return false;
+    cancelRollback(); clearMessage();
+    document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+    checkpoint = snapshot;
+    game = new Game24Game(saved);
+    lastTime = -1; render(); startClock();
+    message('进度已在其他页面更新，已恢复最新关卡');
+    return true;
+  }
+  function dialogOpen() { return !!document.querySelector('dialog[open]'); }
+
+  function renderTime() {
+    const seconds = game.elapsed();
+    if (lastTime !== seconds) { lastTime = seconds; $('timer').textContent = `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`; }
+  }
+  function startClock() {
+    clearInterval(clockId); clockId = 0; renderTime();
+    if (!game.finished() && !document.hidden) clockId = setInterval(renderTime, 250);
+  }
+
+  function render() {
+    $('levelText').textContent = `第${game.level}关`;
+    $('totalScore').textContent = game.totalScore;
+    $('highScore').textContent = game.highScore;
+    [...$('cards').children].forEach((button, i) => {
+      const empty = game.cards[i] === null;
+      const text = empty ? '' : formatNumber(game.cards[i]);
+      button.textContent = text;
+      button.className = `number-card${empty ? ' empty' : ''}${game.selected === i ? ' selected' : ''}${text.length > 8 ? ' tiny' : text.length > 3 ? ' small' : ''}${game.status === 'won' && !empty ? ' final' : ''}`;
+      button.disabled = empty || game.status !== 'playing';
+      button.setAttribute('aria-label', `第${i + 1}张数字卡${empty ? '，已使用' : '，' + text}`);
+      button.setAttribute('aria-pressed', String(game.selected === i));
+      button.title = empty ? '' : String(game.cards[i]);
+    });
+    [...$('operators').children].forEach(button => {
+      button.classList.toggle('selected', game.op === button.dataset.op);
+      button.setAttribute('aria-pressed', String(game.op === button.dataset.op));
+      button.disabled = game.status !== 'playing';
+    });
+    [...$('actions').children].forEach(button => { button.disabled = game.finished(); });
+    const list = $('historyList'); list.replaceChildren();
+    if (!game.history.length) {
+      const empty = document.createElement('p'); empty.className = 'empty-history'; empty.textContent = '选两个数字和一个运算符开始'; list.appendChild(empty);
+    }
+    game.history.forEach((item, i) => {
+      const row = document.createElement('div'); row.className = 'history-row';
+      const no = document.createElement('span'); no.className = 'no'; no.textContent = `#${i + 1}`;
+      const expression = document.createElement('span'); expression.className = 'expression'; expression.textContent = item.step;
+      row.append(no, expression); list.appendChild(row);
+    });
+    $('stepCount').textContent = `${game.history.length} / 3`;
+    renderTime();
+  }
+
+  function showResult() {
+    const won = game.status === 'won';
+    $('resultDialog').className = won ? 'win' : 'skipped';
+    $('resultSymbol').textContent = won ? '✓' : '→';
+    $('resultTitle').textContent = won ? `第 ${game.level} 关通过！` : '跳过本关';
+    $('levelScore').hidden = !won; $('levelScore').textContent = `+${game.levelScore} 分`;
+    $('resultDetails').innerHTML = `<div>${won ? '用时' : '本关用时'} ${game.levelTime} 秒</div><div>累计积分 <b>${game.totalScore}</b></div>${won ? '' : `<div>本关不加分 · 下一关为第${game.savedLevel}关</div><div>最高 ${game.highScore} 分 · 最远通过第 ${game.maxLevel} 关</div>`}`;
+    $('shareNote').textContent = '';
+    if (!$('resultDialog').open) $('resultDialog').showModal();
+  }
+
+  function handleOutcome(outcome) {
+    render();
+    if (outcome.message) message(outcome.message, outcome.retry || outcome.message.includes('不能') ? 'error' : 'hint');
+    if (outcome.won) { cancelRollback(); persist(); sound('win'); startClock(); showResult(); }
+    if (outcome.retry) {
+      cancelRollback(); const token = revision;
+      rollbackId = setTimeout(() => {
+        if (token !== revision || game.status !== 'retrying') return;
+        rollbackId = 0; game.undo(); render(); message('已撤销最后一步，换种运算再试试');
+      }, 1200);
+    }
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const button = document.createElement('button'); button.className = 'number-card'; button.dataset.card = i;
+    button.addEventListener('click', () => {
+      if (dialogOpen() || game.status !== 'playing') return;
+      clearMessage(); sound('number'); vibrate(10); handleOutcome(game.selectCard(i));
+    });
+    $('cards').appendChild(button);
+  }
+  OPERATIONS.forEach(op => {
+    const button = document.createElement('button'); button.className = 'operator'; button.dataset.op = op; button.textContent = op === '-' ? '−' : op;
+    button.setAttribute('aria-label', { '+':'加', '-':'减', '×':'乘', '÷':'除' }[op]);
+    button.addEventListener('click', () => {
+      if (dialogOpen() || game.status !== 'playing') return;
+      clearMessage(); sound('operator'); vibrate(10); handleOutcome(game.selectOp(op));
+    });
+    $('operators').appendChild(button);
+  });
+  $('undoBtn').addEventListener('click', () => {
+    if (dialogOpen() || game.finished()) return;
+    cancelRollback(); clearMessage(); handleOutcome(game.undo());
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (dialogOpen() || game.finished()) return;
+    if (!game.history.length) { message('已经是初始状态'); return; }
+    cancelRollback(); clearMessage(); game.reset(); render();
+  });
+  $('hintBtn').addEventListener('click', () => {
+    if (dialogOpen() || game.finished()) return;
+    message(`答案：${game.solution || '无解'}`);
+  });
+  $('skipBtn').addEventListener('click', () => {
+    if (dialogOpen() || game.finished()) return;
+    cancelRollback(); clearMessage(); game.skip(); persist(); render(); startClock(); showResult();
+  });
+  function changeLevel(restart) {
+    if (!game.finished() || !$('resultDialog').open) return;
+    cancelRollback(); clearMessage(); $('resultDialog').close();
+    if (restart) { game.restart(); persist(); } else game.nextLevel();
+    lastTime = -1; render(); startClock();
+  }
+  $('nextLevelBtn').addEventListener('click', () => changeLevel(false));
+  $('restartBtn').addEventListener('click', () => changeLevel(true));
+  $('resultDialog').addEventListener('cancel', event => event.preventDefault());
+  $('helpBtn').addEventListener('click', () => { if (!game.finished()) $('rulesDialog').showModal(); });
+  $('closeRulesBtn').addEventListener('click', () => $('rulesDialog').close());
+  $('soundEnabled').checked = soundEnabled;
+  $('soundEnabled').addEventListener('change', event => {
+    soundEnabled = event.target.checked; saveStats('webGame24SoundEnabled', soundEnabled);
+    if (!soundEnabled && audio) audio.suspend().catch(() => {});
+  });
+  $('shareBtn').addEventListener('click', async () => {
+    const data = { title: '算24 · 数字迷城', text: `我在算24${game.status === 'won' ? '通过' : '闯到'}了第${game.level}关，累计${game.totalScore}分，来挑战吧！`, url: location.href };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(`${data.text}\n${data.url}`); $('shareNote').textContent = '成绩和链接已复制'; }
+      else $('shareNote').textContent = '请复制地址栏链接分享给好友';
+    } catch (error) { if (error.name !== 'AbortError') $('shareNote').textContent = '请复制地址栏链接分享给好友'; }
+  });
+  document.addEventListener('click', event => {
+    if (event.target.closest('button') && syncCheckpoint()) {
+      event.preventDefault(); event.stopImmediatePropagation();
+    }
+  }, true);
+  window.addEventListener('storage', event => { if (event.key === 'game24Progress' || event.key === null) syncCheckpoint(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncCheckpoint();
+    startClock(); if (document.hidden && audio) audio.suspend().catch(() => {});
+  });
+  window.addEventListener('pagehide', () => {
+    cancelRollback(); clearTimeout(messageId); clearInterval(clockId);
+    if (game.status === 'retrying') game.undo();
+    if (audio) audio.close().catch(() => {});
+  });
+  window.addEventListener('pageshow', event => { if (event.persisted && !syncCheckpoint()) { clearMessage(); render(); startClock(); } });
+  render(); startClock();
+})();
+</script>
+</body>
+</html>

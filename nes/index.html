@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>FC 在线模拟器</title>
+  <link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="main">
+    <div class="panel">
+
+      <div class="dpad-area">
+        <div class="controller" id="dpad">
+          <button class="up joydirection" data-dir="up">up</button>
+          <button class="right joydirection" data-dir="right">right</button>
+          <button class="down joydirection" data-dir="down">down</button>
+          <button class="left joydirection" data-dir="left">left</button>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="screen">
+          <canvas id="screen" width="256" height="240"></canvas>
+          <div class="tip" id="tip"><p>请选择游戏</p></div>
+          <div class="toast" id="toast"></div>
+        </div>
+        <div class="bar">
+          <select id="rom-select"></select>
+          <div class="icons">
+            <button class="icon" id="btn-open" title="载入本地 ROM">
+              <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </button>
+            <button class="icon" id="btn-restart" title="重新开始">
+              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg>
+            </button>
+            <button class="icon active-icon" id="btn-sound" title="声音">
+              <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>
+            </button>
+            <button class="icon" id="btn-theme" title="切换配色">
+              <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-1.2-1-1.6-1-2.7 0-1 .8-1.5 1.8-1.5H17a4 4 0 0 0 4-4C21 6.5 17 3 12 3z"/><path d="M7.5 11h.01M10 7.5h.01M14.5 7.5h.01"/></svg>
+            </button>
+            <button class="icon" id="btn-keys" title="按键设置">
+              <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+            </button>
+            <button class="icon" id="btn-full" title="全屏">
+              <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+          </div>
+          <div class="function">
+            <button data-btn="SELECT">Select</button>
+            <button data-btn="START">Start</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-area">
+        <div class="action">
+          <button data-btn="B">B</button>
+          <button data-btn="A">A</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="dialog" id="keys-dialog" hidden>
+    <div class="dialog-card" role="dialog" aria-label="按键设置">
+      <div class="dialog-title">按键设置</div>
+      <div class="keys-scroll">
+        <table class="keys-table">
+          <thead><tr><th></th><th>玩家 1</th><th>玩家 2</th></tr></thead>
+          <tbody id="keys-body"></tbody>
+        </table>
+      </div>
+      <div class="keys-shared" id="keys-shared"></div>
+      <div class="keys-hint" id="keys-hint"></div>
+      <div class="dialog-actions">
+        <button id="keys-reset">恢复默认</button>
+        <button id="keys-close" class="primary">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fs-scale" id="fs-scale"></div>
+
+  <input type="file" id="rom-file" accept=".nes" hidden>
+  <script src="lib/jsnes.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

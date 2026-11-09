@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>迷宫冒险游戏</title>
+    <link rel="icon" href="../../icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="../../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🏰 迷宫冒险</h1>
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="label">❤️ 生命值:</span>
+                    <span id="health" class="value">3</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🏹 箭矢:</span>
+                    <span id="arrows" class="value">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🔑 钥匙:</span>
+                    <span id="keys" class="value">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">🗝️ 黑洞钥匙:</span>
+                    <span id="blackholeKeys" class="value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-main">
+            <div class="game-canvas-wrapper">
+                <canvas id="gameCanvas"></canvas>
+                <div id="gameMessage" class="game-message hidden"></div>
+            </div>
+
+            <div class="game-sidebar">
+                <div class="inventory-section">
+                    <h3>📦 背包</h3>
+                    <div class="inventory-grid">
+                        <div class="inventory-item" id="inv-sword">
+                            <span class="item-icon">⚔️</span>
+                            <span class="item-name">宝剑</span>
+                            <span class="item-status" id="sword-status">❌</span>
+                        </div>
+                        <div class="inventory-item" id="inv-bow">
+                            <span class="item-icon">🏹</span>
+                            <span class="item-name">弓箭</span>
+                            <span class="item-status" id="bow-status">❌</span>
+                        </div>
+                        <div class="inventory-item" id="inv-shield">
+                            <span class="item-icon">🛡️</span>
+                            <span class="item-name">盾牌</span>
+                            <span class="item-status" id="shield-status">❌</span>
+                        </div>
+                        <div class="inventory-item" id="inv-ladder">
+                            <span class="item-icon">🪜</span>
+                            <span class="item-name">梯子</span>
+                            <span class="item-count" id="ladder-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <h3>🎮 操作说明</h3>
+                    <div class="controls-list">
+                        <div class="control-item">⬆️⬇️⬅️➡️ 方向键移动</div>
+                        <div class="control-item">空格键 使用梯子翻墙</div>
+                        <div class="control-item">宝剑自动攻击视野内怪物</div>
+                        <div class="control-item">弓箭自动攻击9格内怪物</div>
+                        <div class="control-item">盾牌自动减伤</div>
+                        <div class="control-item">收集道具增强能力</div>
+                    </div>
+                </div>
+
+                <div class="legend-section">
+                    <h3>📖 图例</h3>
+                    <div class="legend-list">
+                        <div class="legend-item"><span class="legend-icon">🚩</span> 玩家</div>
+                        <div class="legend-item"><span class="legend-icon">👻</span> 怪物</div>
+                        <div class="legend-item"><span class="legend-icon">⬛</span> 墙壁</div>
+                        <div class="legend-item"><span class="legend-icon">🚪</span> 门</div>
+                        <div class="legend-item"><span class="legend-icon">🕳️</span> 黑洞</div>
+                        <div class="legend-item"><span class="legend-icon">⚡</span> 闪电陷阱</div>
+                    </div>
+                </div>
+
+                <button id="restartBtn" class="restart-btn">🔄 重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="gameOverTitle">游戏结束</h2>
+            <p id="gameOverMessage"></p>
+            <button id="modalRestartBtn" class="modal-btn">重新开始</button>
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        <p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">With</a> 通过自然语言生成</p>
+    </footer>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>

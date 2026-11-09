@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>猜瓶子</title>
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="../shared/style.css" />
+<style>
+  :root { --accent: #38bdf8; --text: #fff; --text-dim: #a0a5b8; --secondary: #0f3460; --success: #22c55e; --warning: #fbbf24; }
+  body { background: linear-gradient(180deg, #16213e, #1a1a2e 65%, #0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; }
+  [hidden] { display: none !important; }
+  button, a { touch-action: manipulation; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  button:disabled { cursor: default; }
+  .game-shell { width: min(100%, 460px); margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 10px; padding: 0 0 14px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; background: var(--secondary); border: 0; }
+  .heading { text-align: center; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: 4px; color: var(--gold); }
+  .subtitle { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+  .home-intro { text-align: center; margin: 10px 0 20px; }
+  .home-intro h2 { margin: 0 0 8px; font-size: 34px; color: var(--gold); }
+  .home-intro p { margin: 0; font-size: 14px; color: var(--text-dim); }
+  .option-group { border: 0; padding: 0; margin: 0 0 18px; min-width: 0; }
+  .option-group legend { width: 100%; padding: 0 0 10px; font-size: 12px; color: var(--text-dim); text-align: center; }
+  .choices { display: flex; justify-content: center; gap: 10px; }
+  .choice { flex: 1; max-width: 120px; min-height: 48px; padding: 8px 4px; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--text-dim); font-size: 15px; }
+  .choice[aria-pressed="true"] { color: #08243b; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .choice:hover, .action:hover:not(:disabled) { filter: brightness(1.15); }
+  .choice:active, .action:active:not(:disabled) { transform: scale(.96); }
+  .dialog-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+  .btn { min-height: 46px; min-width: 120px; border-radius: 23px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #08243b; font-weight: 600; }
+  .text-btn { border: 0; background: none; color: var(--text-dim); min-height: 44px; padding: 10px; font-size: 13px; }
+  .stats-text { text-align: center; color: var(--text-dim); font-size: 13px; margin: 16px 0 20px; }
+  .rules-card { margin-top: 4px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); font-size: 12px; line-height: 1.9; color: var(--text-dim); }
+  .rules-card h3 { margin: 0 0 6px; font-size: 13px; color: var(--gold); }
+  .rules-card p { margin: 0; }
+  .status-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .status-bar b { color: var(--text); }
+  .turn-text { min-height: 40px; display: flex; align-items: center; justify-content: center; margin: 8px 0; font-size: 14px; font-weight: 600; text-align: center; line-height: 1.6; color: var(--text-dim); }
+  .shelf { margin: 10px 0; padding: 14px 10px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+  .shelf-row { display: flex; justify-content: center; gap: clamp(6px, 2vw, 14px); padding: 8px 0; }
+  .shelf-label { text-align: center; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; padding: 4px 0 0; margin: 0; }
+  .shelf-divider { height: 1px; background: rgba(255,255,255,.08); margin: 4px 0; }
+  .bottle-slot { width: clamp(38px, 11vw, 58px); background: none; border: 0; padding: 0; }
+  .bottle-btn { cursor: pointer; }
+  .bottle-svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); transition: transform .12s; }
+  .bottle-btn:hover:not(:disabled) .bottle-svg { transform: translateY(-2px); }
+  .bottle-btn:active:not(:disabled) .bottle-svg { transform: scale(.94); }
+  .bottle-btn.selected .bottle-svg { filter: drop-shadow(0 0 8px #fff) drop-shadow(0 3px 4px rgba(0,0,0,.35)); transform: translateY(-4px); }
+  .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+  .action { min-height: 46px; padding: 0 4px; border: 1px solid transparent; border-radius: 22px; background: var(--secondary); color: #fff; font-size: 13px; }
+  .action.primary { background: var(--accent); color: #08243b; font-weight: 600; }
+  .action:disabled { opacity: .4; }
+  .bottle-slot { position: relative; }
+  .mark { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); font-size: 14px; font-weight: 700; line-height: 1; }
+  .mark.ok { color: var(--success); }
+  .mark.bad { color: #fb7185; }
+  .shelf-row.has-marks { padding-bottom: 22px; }
+  .history-panel { min-height: 100px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(15,52,96,.35); overflow: hidden; }
+  .history-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .history-header h2 { margin: 0; color: var(--text-dim); font-size: 12px; font-weight: 400; }
+  .history-list { max-height: 220px; overflow-y: auto; }
+  .empty-history { color: var(--text-dim); font-size: 12px; text-align: center; margin: 20px 8px; }
+  .history-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 52px; align-items: center; min-height: 40px; padding: 0 14px; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .attempt { font-size: 11px; color: var(--text-dim); }
+  .mini-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .mini-row .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 -1px 2px rgba(0,0,0,.3); }
+  .feedback { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--success); }
+  .board-note { margin: 16px 0 0; font-size: 12px; line-height: 1.8; color: var(--text-dim); text-align: center; }
+  dialog { width: min(400px, calc(100% - 32px)); max-height: calc(100svh - 40px); padding: 24px; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; background: #16213e; color: #fff; }
+  dialog::backdrop { background: rgba(0,0,0,.84); }
+  dialog h2 { margin: 0 0 14px; font-size: 24px; color: var(--gold); }
+  dialog p { margin: 0 0 10px; font-size: 14px; line-height: 1.8; color: #b7bdcc; }
+  .example { background: rgba(15,52,96,.65); padding: 12px; border-radius: 10px; }
+  .example .mini-row { justify-content: center; margin: 6px 0; }
+  .sound-option { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--text-dim); font-size: 12px; min-height: 44px; margin-top: 4px; }
+  .sound-option input { accent-color: var(--success); width: 18px; height: 18px; }
+  #resultDialog { text-align: center; }
+  .result-symbol { font-size: 44px; line-height: 1; color: var(--gold); margin-bottom: 12px; }
+  #resultDialog.loss .result-symbol { color: #fb7185; }
+  #resultDialog.win .result-symbol { color: var(--success); }
+  .level-score { color: var(--gold); font-size: 24px; font-weight: 600; margin: 10px 0; }
+  .result-details { font-size: 13px; color: var(--text-dim); line-height: 2; }
+  .result-details b { color: #fff; }
+  @media (max-width: 360px) { .game-shell { padding-left: 12px; padding-right: 12px; } .actions { gap: 6px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="game-header">
+    <a id="backLink" class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+    <div class="heading"><h1>猜瓶子</h1><p id="modeText" class="subtitle">遮住的架子 · 猜出正确顺序</p></div>
+    <button id="helpBtn" class="help-btn" aria-label="游戏规则">?</button>
+  </header>
+  <section id="homeScreen" aria-label="猜瓶子难度选择">
+    <div class="home-intro"><h2>猜 瓶 子</h2><p>移动瓶子，还原被遮住的顺序</p></div>
+    <fieldset class="option-group"><legend>瓶子数量</legend><div id="countOptions" class="choices"></div></fieldset>
+    <div class="dialog-footer"><button id="startBtn" class="btn primary">开始游戏</button></div>
+    <p id="statsText" class="stats-text"></p>
+    <section class="rules-card"><h3>游戏规则</h3><p>架子第二层有一套瓶子按某种顺序摆好并被遮住，第一层是你可以移动的另一套瓶子。点击两个瓶子可交换位置；摆好后点击"提交猜测"，游戏会告诉你有几个瓶子的颜色和位置与被遮住的完全一致。<b id="homeAttempts">8</b> 次机会内全部猜中即可通关。</p></section>
+  </section>
+  <section id="playScreen" hidden aria-label="猜瓶子对局">
+    <div class="status-bar"><span id="levelText"></span><span>分数 <b id="scoreText">0</b></span><span id="remainingText"></span><time id="timerText">0秒</time></div>
+    <p id="messageText" class="turn-text" role="status"></p>
+    <div class="shelf">
+      <p class="shelf-label">被遮住的架子（第二层）</p>
+      <div id="hiddenRow" class="shelf-row" aria-label="被遮住的瓶子"></div>
+      <div class="shelf-divider"></div>
+      <div id="playerRow" class="shelf-row" aria-label="你的瓶子，点击选中后再点击另一个交换位置"></div>
+      <p class="shelf-label">你的架子（第一层，可移动）</p>
+    </div>
+    <div class="actions">
+      <button id="submitBtn" class="action primary">提交猜测</button>
+      <button id="shuffleBtn" class="action">重新摆放</button>
+      <button id="giveUpBtn" class="action">放弃本关</button>
+    </div>
+    <div id="endActions" class="actions" hidden>
+      <button id="endNextBtn" class="action primary">下一关</button>
+      <button id="endRestartBtn" class="action">重新挑战</button>
+      <button id="endMenuBtn" class="action">返回菜单</button>
+    </div>
+    <section class="history-panel" aria-label="历史猜测记录">
+      <header class="history-header"><h2>猜测记录</h2><span id="historyCount" class="attempt"></span></header>
+      <div id="historyList" class="history-list"><p class="empty-history">提交猜测后，这里会记录每次尝试</p></div>
+    </section>
+    <p class="board-note">点击一个瓶子选中，再点击另一个瓶子即可交换位置<br>退出保留关卡与积分，再次进入会重新生成本关顺序</p>
+  </section>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">猜瓶子 · 规则与操作</h2>
+  <p>架子分两层：第二层摆着一套瓶子并被遮住，顺序未知；第一层是同样数量、同样颜色的另一套瓶子，由你自由摆放。</p>
+  <p>操作：点击一个瓶子选中（会略微浮起并发光），再点击另一个瓶子完成交换。摆好后点击"提交猜测"，游戏会显示当前有几个瓶子<b>颜色和位置</b>都与遮住的第二层完全一致。</p>
+  <div class="example">例如 4 个瓶子，提交后显示 <b class="feedback" style="color:var(--success)">2 / 4</b>，说明恰好有 2 个位置的颜色与遮住的一致，但不会告诉你具体是哪两个。</div>
+  <p id="attemptRule"></p>
+  <p>"重新摆放"可随时把你的瓶子重新随机打乱，不消耗次数。用完所有提交机会仍未全部猜中则本关失败，游戏结束时会揭晓第二层的真实顺序。提交过至少一次后可点击"放弃本关"，同样判定为失败并揭晓答案；结算框点"查看答案"可回到棋盘，对照每个位置的对错。</p>
+  <label class="sound-option"><input id="soundEnabled" type="checkbox" checked>操作音效</label>
+  <div class="dialog-footer"><button id="closeRulesBtn" class="btn primary">知道了</button></div>
+</dialog>
+<dialog id="giveUpDialog" aria-labelledby="giveUpTitle">
+  <h2 id="giveUpTitle">放弃本关？</h2>
+  <p>放弃后本关判定为失败，并揭晓被遮住的正确顺序。</p>
+  <div class="dialog-footer"><button id="giveUpConfirmBtn" class="btn primary">确认放弃</button><button id="giveUpCancelBtn" class="btn">继续挑战</button></div>
+</dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle">
+  <div class="result-symbol" id="resultSymbol" aria-hidden="true">✓</div>
+  <h2 id="resultTitle"></h2>
+  <div class="level-score" id="levelScoreText" hidden></div>
+  <div class="result-details" id="resultDetails"></div>
+  <div class="dialog-footer"><button id="nextLevelBtn" class="btn primary">下一关</button><button id="restartBtn" class="btn">从第1关开始</button></div>
+  <div class="dialog-footer"><button id="viewAnswerBtn" class="btn">查看答案</button><button id="resultMenuBtn" class="text-btn">返回菜单</button></div>
+</dialog>
+<script src="../shared/utils.js"></script>
+<script id="bottles-engine">
+// 饮料外观：只取品牌主色与标志性元素（无 logo、无文字），做成原创插画
+const DRINK_GRAY = { body: 'rgba(255,255,255,.09)', dark: 'rgba(255,255,255,.16)', band: 'rgba(255,255,255,.05)', light: 'rgba(255,255,255,.22)', accent: 'rgba(255,255,255,.14)', badge: 'rgba(255,255,255,.18)', ink: 'rgba(255,255,255,.35)' };
+
+function drinkSvg(inner) {
+  return '<svg viewBox="0 0 58 120" class="bottle-svg" aria-hidden="true">' + inner + '</svg>';
+}
+
+function curveBottleSvg(c, deco, letter) {
+  return drinkSvg(
+    `<rect x="22" y="14" width="14" height="10" rx="2" fill="${c.dark}"/>`
+    + `<rect x="24" y="23" width="10" height="11" fill="${c.body}"/>`
+    + `<path d="M24 33 C17 41, 13 50, 13 62 L13 106 C13 115, 18 119, 24 119 L34 119 C40 119, 45 115, 45 106 L45 62 C45 50, 41 41, 34 33 Z" fill="${c.body}" stroke="rgba(255,255,255,.2)" stroke-width="1.5"/>`
+    + `<rect x="15" y="64" width="28" height="32" fill="${c.band}"/>`
+    + deco
+    + '<ellipse cx="18" cy="94" rx="3.5" ry="18" fill="rgba(255,255,255,.18)"/>'
+    + (letter ? `<circle cx="29" cy="52" r="8.5" fill="${c.badge}"/>`
+      + `<text x="29" y="56" text-anchor="middle" font-size="11" font-weight="700" fill="${c.ink}">${letter}</text>` : '')
+  );
+}
+
+const DRINKS = [
+  {
+    color: '#d8232a',
+    paint: { body: '#d8232a', dark: '#8f1a1f', band: '#d8232a', light: '#ffffff', accent: '#ffffff' },
+    shape: curveBottleSvg,
+    deco: c => `<path d="M16 84 C20 76, 24 92, 29 84 C34 76, 38 92, 42 84" fill="none" stroke="${c.light}" stroke-width="5" stroke-linecap="round"/>`
+  },
+  {
+    color: '#1f4f9e',
+    paint: { body: '#1f4f9e', dark: '#163a73', band: '#1f4f9e', light: '#ffffff', accent: '#d8232a' },
+    shape: curveBottleSvg,
+    deco: c => `<circle cx="29" cy="82" r="13" fill="${c.body}"/>`
+      + '<path d="M16 82 A13 13 0 0 1 42 82 Z" fill="' + c.accent + '"/>'
+      + `<path d="M17.5 84 C21 77, 25 91, 29.5 84 C33 78, 37 89, 40.5 83" fill="none" stroke="${c.light}" stroke-width="3.5" stroke-linecap="round"/>`
+  },
+  {
+    color: '#3f7a52',
+    paint: { body: '#3f7a52', dark: '#22482f', band: '#f2efe4', light: '#f2efe4', accent: '#22482f' },
+    shape: curveBottleSvg,
+    deco: c => `<rect x="20" y="72" width="18" height="3.5" fill="${c.accent}"/>`
+      + `<rect x="20" y="80" width="12" height="3.5" fill="${c.accent}"/>`
+  },
+  {
+    color: '#f08a24',
+    paint: { body: '#f08a24', dark: '#a8540f', band: '#ffffff', light: '#ffffff', accent: '#f08a24' },
+    shape: curveBottleSvg,
+    deco: c => `<circle cx="29" cy="80" r="7" fill="${c.accent}"/>`
+      + '<path d="M29 71 C31 68, 35 67, 36 69 C34 72, 31 73, 29 71 Z" fill="#4c9a4c"/>'
+  },
+  {
+    color: '#7b4bb7',
+    paint: { body: '#7b4bb7', dark: '#522f8a', band: '#6b3ea3', light: '#ffffff', accent: '#ffffff' },
+    shape: curveBottleSvg,
+    deco: c => `<circle cx="24" cy="84" r="3.2" fill="${c.light}"/>`
+      + `<circle cx="31" cy="80" r="3.2" fill="${c.light}"/>`
+      + `<circle cx="35" cy="86" r="3.2" fill="${c.light}"/>`
+      + `<rect x="26.5" y="74" width="4" height="6" rx="2" fill="${c.light}"/>`
+  },
+  {
+    color: '#1aa598',
+    paint: { body: '#1aa598', dark: '#0f7a70', band: '#eaf7f4', light: '#eaf7f4', accent: '#1aa598' },
+    shape: curveBottleSvg,
+    deco: c => `<circle cx="25" cy="70" r="2" fill="${c.accent}"/>`
+      + `<circle cx="33" cy="76" r="1.6" fill="${c.accent}"/>`
+      + `<circle cx="27" cy="83" r="1.3" fill="${c.accent}"/>`
+  }
+];
+
+const PALETTE = DRINKS.map(d => d.color);
+const LETTERS = ['A','B','C','D','E','F'];
+const COLOR_NAMES = ['红','蓝','绿','橙','紫','青'];
+// 6 瓶有 720 种排列，难度远高于 4 瓶的 24 种，机会数按瓶数区分
+const MAX_ATTEMPTS = { 4: 10, 6: 20 };
+const BOTTLE_COUNTS = [4, 6];
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+class BottleGuessGame {
+  constructor(progress, bottleCount) {
+    const p = progress && typeof progress === 'object' ? progress : {};
+    const integer = (value, fallback, min) => Number.isSafeInteger(value) && value >= min ? value : fallback;
+    const resolvedCount = BOTTLE_COUNTS.includes(bottleCount) ? bottleCount : (BOTTLE_COUNTS.includes(p.bottleCount) ? p.bottleCount : 4);
+    this.bottleCount = resolvedCount;
+    this.highScore = integer(p.highScore, 0, 0);
+    this.maxLevel = integer(p.maxLevel, 1, 1);
+    this.savedLevel = integer(p.savedLevel, 1, 1);
+    this.totalScore = integer(p.totalScore, 0, 0);
+    this.maxAttempts = MAX_ATTEMPTS[resolvedCount];
+    this.startLevel(this.savedLevel);
+  }
+
+  startLevel(level) {
+    this.level = level;
+    this.history = [];
+    this.levelScore = 0;
+    this.isGameOver = false;
+    this.isWin = false;
+    this.gaveUp = false;
+    this.startedAt = Date.now();
+    this.levelTime = 0;
+    const base = Array.from({ length: this.bottleCount }, (_, i) => i);
+    this.hidden = shuffleArray(base);
+    this.player = shuffleArray(base);
+  }
+
+  swap(i, j) {
+    if (this.isGameOver) return false;
+    if (!Number.isInteger(i) || !Number.isInteger(j) || i < 0 || j < 0 || i >= this.bottleCount || j >= this.bottleCount || i === j) return false;
+    [this.player[i], this.player[j]] = [this.player[j], this.player[i]];
+    return true;
+  }
+
+  shufflePlayerRow() {
+    if (this.isGameOver) return false;
+    this.player = shuffleArray(this.player);
+    return true;
+  }
+
+  compare(row) {
+    let matched = 0;
+    for (let i = 0; i < this.bottleCount; i++) if (row[i] === this.hidden[i]) matched++;
+    return matched;
+  }
+
+  elapsed() { return this.isGameOver ? this.levelTime : Math.max(0, Math.floor((Date.now() - this.startedAt) / 1000)); }
+
+  submit() {
+    if (this.isGameOver) return { success: false, error: '游戏已结束' };
+    const matched = this.compare(this.player);
+    this.history.push({ arrangement: this.player.slice(), matched, attempt: this.history.length + 1 });
+    this.isWin = matched === this.bottleCount;
+    if (this.isWin || this.history.length >= this.maxAttempts) {
+      this.levelTime = this.elapsed();
+      this.isGameOver = true;
+      if (this.isWin) {
+        const timeBonus = this.levelTime <= 20 ? 50 : this.levelTime <= 45 ? 30 : this.levelTime <= 90 ? 10 : 0;
+        const basePoints = this.bottleCount === 6 ? 150 : 100;
+        this.levelScore = this.level * (basePoints + timeBonus) + (this.maxAttempts - this.history.length) * 20;
+        this.totalScore += this.levelScore;
+        this.highScore = Math.max(this.highScore, this.totalScore);
+        this.maxLevel = Math.max(this.maxLevel, this.level);
+        this.savedLevel = this.level + 1;
+      }
+    }
+    return { success: true, matched };
+  }
+
+  giveUp() {
+    if (this.isGameOver || !this.history.length) return false;
+    this.levelTime = this.elapsed();
+    this.isGameOver = true;
+    this.gaveUp = true;
+    return true;
+  }
+
+  nextLevel() { if (this.isWin) this.startLevel(this.savedLevel); }
+
+  restart() {
+    this.savedLevel = 1;
+    this.totalScore = 0;
+    this.startLevel(1);
+  }
+
+  progress() { return { bottleCount: this.bottleCount, highScore: this.highScore, maxLevel: this.maxLevel, savedLevel: this.savedLevel, totalScore: this.totalScore }; }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const { loadStats, saveStats, vibrate, pad } = window.GameUtils;
+  const $ = id => document.getElementById(id);
+  const LAST_COUNT_KEY = 'bottleGuessLastCount';
+  const SOUND_KEY = 'webBottleGuessSoundEnabled';
+  const progressKey = n => `bottleGuessProgress${n}`;
+
+  let bottleCount = loadStats(LAST_COUNT_KEY, 4);
+  if (!BOTTLE_COUNTS.includes(bottleCount)) bottleCount = 4;
+  let game = null;
+  let selected = null;
+  let clockId = 0, lastTime = -1;
+  let audio = null;
+  let soundEnabled = loadStats(SOUND_KEY, true) !== false;
+
+  function sound(kind) {
+    if (!soundEnabled) return;
+    try {
+      const AudioClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioClass) return;
+      if (!audio || audio.state === 'closed') audio = new AudioClass();
+      if (audio.state === 'suspended') audio.resume().catch(() => {});
+      const notes = kind === 'win' ? [523, 659, 784] : kind === 'select' ? [420] : kind === 'swap' ? [340] : [620];
+      notes.forEach((freq, i) => {
+        const oscillator = audio.createOscillator(), gain = audio.createGain();
+        const start = audio.currentTime + i * .1;
+        oscillator.frequency.value = freq;
+        gain.gain.setValueAtTime(.03, start);
+        gain.gain.exponentialRampToValueAtTime(.001, start + .09);
+        oscillator.connect(gain); gain.connect(audio.destination);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        oscillator.start(start); oscillator.stop(start + .1);
+      });
+    } catch (_) { /* 音频不可用不影响游戏 */ }
+  }
+
+  function persist() { if (game) saveStats(progressKey(game.bottleCount), game.progress()); }
+
+  function bottleMarkup(colorIndex, covered) {
+    const drink = DRINKS[colorIndex];
+    const paint = covered
+      ? DRINK_GRAY
+      : Object.assign({}, drink.paint, { badge: '#ffffff', ink: drink.paint.dark });
+    const svg = drink.shape(paint, covered ? '' : drink.deco(paint), covered ? '' : LETTERS[colorIndex]);
+    if (!covered) return svg;
+    return svg.replace('</svg>', '<text x="29" y="82" text-anchor="middle" font-size="24" fill="rgba(255,255,255,.32)" font-weight="700">?</text></svg>');
+  }
+
+  function renderTime() {
+    if (!game) return;
+    const sec = game.elapsed();
+    if (lastTime === sec) return;
+    lastTime = sec;
+    $('timerText').textContent = sec < 60 ? `${sec}秒` : `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
+  }
+
+  function startClock() {
+    clearInterval(clockId);
+    clockId = 0;
+    renderTime();
+    if (game && !game.isGameOver && !document.hidden) clockId = setInterval(renderTime, 500);
+  }
+
+  function restoreMessage() {
+    if (!game || game.isGameOver) return;
+    const el = $('messageText');
+    el.textContent = selected !== null ? '再点一个瓶子完成交换' : '点击瓶子选中，再点另一个交换位置';
+  }
+
+  function renderShelf() {
+    const hiddenWrap = $('hiddenRow'), playerWrap = $('playerRow');
+    hiddenWrap.replaceChildren();
+    playerWrap.replaceChildren();
+    const revealed = game.isGameOver;
+    for (let i = 0; i < game.bottleCount; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'bottle-slot';
+      if (revealed) slot.dataset.colorIndex = String(game.hidden[i]);
+      slot.innerHTML = bottleMarkup(game.hidden[i], !revealed);
+      hiddenWrap.appendChild(slot);
+    }
+    for (let i = 0; i < game.bottleCount; i++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bottle-slot bottle-btn' + (selected === i ? ' selected' : '');
+      btn.disabled = game.isGameOver;
+      btn.dataset.index = String(i);
+      btn.dataset.colorIndex = String(game.player[i]);
+      btn.setAttribute('aria-label', `第${i + 1}位，${LETTERS[game.player[i]]}号${COLOR_NAMES[game.player[i]]}色瓶子${selected === i ? '，已选中' : ''}`);
+      btn.innerHTML = bottleMarkup(game.player[i], false);
+      if (revealed) {
+        const ok = game.player[i] === game.hidden[i];
+        btn.insertAdjacentHTML('beforeend', `<span class="mark ${ok ? 'ok' : 'bad'}" aria-hidden="true">${ok ? '✓' : '×'}</span>`);
+      }
+      btn.addEventListener('click', () => handleBottleClick(i));
+      playerWrap.appendChild(btn);
+    }
+    playerWrap.classList.toggle('has-marks', revealed);
+  }
+
+  function renderHistory() {
+    const list = $('historyList');
+    list.replaceChildren();
+    $('historyCount').textContent = game.history.length ? `${game.history.length}/${game.maxAttempts}` : '';
+    if (!game.history.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-history';
+      empty.textContent = '提交猜测后，这里会记录每次尝试';
+      list.appendChild(empty);
+      return;
+    }
+    game.history.slice().reverse().forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      row.setAttribute('aria-label', `第${item.attempt}次，${item.matched}个位置正确`);
+      const dots = item.arrangement.map(ci => `<span class="dot" style="background:${PALETTE[ci]}"></span>`).join('');
+      row.innerHTML = `<span class="attempt">#${item.attempt}</span><span class="mini-row">${dots}</span><span class="feedback">${item.matched}/${game.bottleCount}</span>`;
+      list.appendChild(row);
+    });
+    list.scrollTop = 0;
+  }
+
+  function renderGame() {
+    $('levelText').textContent = `第${game.level}关`;
+    $('scoreText').textContent = game.totalScore;
+    const remaining = game.maxAttempts - game.history.length;
+    $('remainingText').textContent = `剩余 ${remaining}/${game.maxAttempts}`;
+    $('submitBtn').disabled = game.isGameOver;
+    $('shuffleBtn').disabled = game.isGameOver;
+    $('giveUpBtn').disabled = game.isGameOver || !game.history.length;
+    document.querySelector('#playScreen > .actions').hidden = game.isGameOver;
+    $('endActions').hidden = !game.isGameOver;
+    $('endNextBtn').hidden = !game.isWin;
+    $('endActions').style.gridTemplateColumns = `repeat(${game.isWin ? 3 : 2}, minmax(0, 1fr))`;
+    if (game.isGameOver) $('messageText').textContent = game.isWin ? `恭喜通关！用时 ${game.levelTime} 秒` : `${game.gaveUp ? '已放弃本关' : '本关机会已用完'}，已揭晓正确顺序（✓ 位置正确 × 位置错误）`;
+    renderShelf(); renderHistory(); renderTime();
+  }
+
+  function render() {
+    const playing = !!game;
+    $('homeScreen').hidden = playing;
+    $('playScreen').hidden = !playing;
+    $('backLink').setAttribute('aria-label', playing ? '返回菜单' : '返回网站首页');
+    $('modeText').textContent = playing ? `${game.bottleCount}瓶模式 · 第${game.level}关` : '遮住的架子 · 猜出正确顺序';
+    if (!playing) { renderHome(); return; }
+    renderGame();
+    restoreMessage();
+  }
+
+  function renderHome() {
+    document.querySelectorAll('[data-count]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.count) === bottleCount)));
+    $('homeAttempts').textContent = MAX_ATTEMPTS[bottleCount];
+    const saved = loadStats(progressKey(bottleCount), null);
+    $('statsText').textContent = saved && (saved.highScore || saved.maxLevel > 1)
+      ? `${bottleCount}瓶模式：历史最高 ${saved.highScore || 0} 分 · 最远第 ${saved.maxLevel || 1} 关`
+      : `${bottleCount}瓶模式：暂无记录，开始你的第一局`;
+  }
+
+  function handleBottleClick(i) {
+    if (!game || game.isGameOver) return;
+    if (selected === null) { selected = i; sound('select'); vibrate(10); }
+    else if (selected === i) { selected = null; }
+    else {
+      const a = selected;
+      const before = Array.from($('playerRow').children, el => el.getBoundingClientRect());
+      game.swap(a, i); selected = null; sound('swap'); vibrate(14);
+      renderShelf(); restoreMessage();
+      animateSwap(a, i, before);
+      return;
+    }
+    renderShelf(); restoreMessage();
+  }
+
+  // 交换动画：状态已即时更新，这里只做视觉过渡（FLIP），两瓶从旧位置滑到新位置，一个上弧、一个下沉避免重叠
+  function animateSwap(a, b, before) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const row = $('playerRow').children;
+    [[a, b, -18], [b, a, 8]].forEach(([to, from, lift]) => {
+      const el = row[to];
+      if (!el || !before[to] || !before[from]) return;
+      const dx = before[from].left - before[to].left;
+      el.style.zIndex = lift < 0 ? '2' : '1';
+      const anim = el.animate([
+        { transform: `translate(${dx}px, 0) scale(1)` },
+        { transform: `translate(${dx / 2}px, ${lift}px) scale(1.08)`, offset: .5 },
+        { transform: 'translate(0, 0) scale(1)' }
+      ], { duration: 320, easing: 'ease-in-out' });
+      anim.onfinish = anim.oncancel = () => { el.style.zIndex = ''; };
+    });
+  }
+
+  function showResult() {
+    $('resultDialog').className = game.isWin ? 'win' : 'loss';
+    $('resultSymbol').textContent = game.isWin ? '✓' : '×';
+    $('resultTitle').textContent = game.isWin ? `第 ${game.level} 关通过！` : game.gaveUp ? '已放弃本关' : '闯关失败';
+    $('levelScoreText').hidden = !game.isWin;
+    $('levelScoreText').textContent = `+${game.levelScore} 分`;
+    $('resultDetails').innerHTML = game.isWin
+      ? `<div>用时 ${game.levelTime} 秒 · 提交 ${game.history.length} 次</div><div>累计积分 <b>${game.totalScore}</b></div>`
+      : `<div>止步于第 ${game.level} 关</div><div>累计积分 <b>${game.totalScore}</b></div><div>历史最高 ${game.highScore} 分 · 最远第 ${game.maxLevel} 关</div>`;
+    $('nextLevelBtn').hidden = !game.isWin;
+    $('restartBtn').textContent = game.isWin ? '从第1关开始' : '重新挑战（从第1关开始）';
+    if (!$('resultDialog').open) $('resultDialog').showModal();
+  }
+
+  function startGame() {
+    saveStats(LAST_COUNT_KEY, bottleCount);
+    game = new BottleGuessGame(loadStats(progressKey(bottleCount), null), bottleCount);
+    selected = null; lastTime = -1;
+    render(); startClock();
+  }
+
+  function backToMenu() {
+    game = null; selected = null;
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    render();
+  }
+
+  function beginLevel(restart) {
+    $('resultDialog').close();
+    if (restart) { game.restart(); persist(); } else game.nextLevel();
+    selected = null; lastTime = -1;
+    render(); startClock();
+  }
+
+  BOTTLE_COUNTS.forEach(count => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'choice';
+    button.dataset.count = String(count);
+    button.textContent = `${count} 瓶`;
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => { bottleCount = count; renderHome(); });
+    $('countOptions').appendChild(button);
+  });
+
+  $('startBtn').addEventListener('click', startGame);
+  $('submitBtn').addEventListener('click', () => {
+    if (!game || game.isGameOver) return;
+    const result = game.submit();
+    if (!result.success) return;
+    selected = null;
+    sound(game.isWin ? 'win' : 'submit'); vibrate(game.isWin ? 30 : 15);
+    render();
+    if (game.isGameOver) { persist(); startClock(); showResult(); }
+  });
+  $('shuffleBtn').addEventListener('click', () => {
+    if (!game || game.isGameOver) return;
+    game.shufflePlayerRow();
+    selected = null;
+    renderShelf();
+  });
+  $('giveUpBtn').addEventListener('click', () => {
+    if (game && !game.isGameOver && game.history.length && !$('giveUpDialog').open) $('giveUpDialog').showModal();
+  });
+  $('giveUpCancelBtn').addEventListener('click', () => $('giveUpDialog').close());
+  $('giveUpConfirmBtn').addEventListener('click', () => {
+    $('giveUpDialog').close();
+    if (!game || !game.giveUp()) return;
+    selected = null;
+    sound('submit'); vibrate(15);
+    render(); persist(); startClock(); showResult();
+  });
+  $('viewAnswerBtn').addEventListener('click', () => $('resultDialog').close());
+  $('endNextBtn').addEventListener('click', () => { if (game && game.isWin) beginLevel(false); });
+  $('endRestartBtn').addEventListener('click', () => { if (game && game.isGameOver) beginLevel(true); });
+  $('endMenuBtn').addEventListener('click', backToMenu);
+  $('resultMenuBtn').addEventListener('click', backToMenu);
+  $('nextLevelBtn').addEventListener('click', () => { if (game && game.isWin && $('resultDialog').open) beginLevel(false); });
+  $('restartBtn').addEventListener('click', () => { if (game && game.isGameOver && $('resultDialog').open) beginLevel(true); });
+  $('helpBtn').addEventListener('click', () => {
+    $('attemptRule').textContent = `每关共 ${game ? game.maxAttempts : MAX_ATTEMPTS[bottleCount]} 次提交机会。`;
+    if (!$('rulesDialog').open) $('rulesDialog').showModal();
+  });
+  $('closeRulesBtn').addEventListener('click', () => $('rulesDialog').close());
+  $('soundEnabled').checked = soundEnabled;
+  $('soundEnabled').addEventListener('change', event => {
+    soundEnabled = event.target.checked; saveStats(SOUND_KEY, soundEnabled);
+    if (!soundEnabled && audio) audio.suspend().catch(() => {});
+  });
+  $('backLink').addEventListener('click', event => { if (game) { event.preventDefault(); backToMenu(); } });
+  $('resultDialog').addEventListener('cancel', event => event.preventDefault());
+  document.addEventListener('visibilitychange', () => {
+    startClock();
+    if (document.hidden && audio) audio.suspend().catch(() => {});
+  });
+  window.addEventListener('pagehide', () => {
+    clearInterval(clockId);
+    if (audio) audio.close().catch(() => {});
+  });
+  window.addEventListener('pageshow', event => { if (event.persisted) { restoreMessage(); startClock(); } });
+
+  window.bottlesTest = {
+    snapshot: () => game ? { level: game.level, hidden: game.hidden.slice(), player: game.player.slice(), historyLen: game.history.length, isGameOver: game.isGameOver, isWin: game.isWin, totalScore: game.totalScore, levelScore: game.levelScore } : null,
+    select: i => handleBottleClick(i),
+    forceRow(hiddenArr, playerArr) {
+      if (!game) return false;
+      game.hidden = hiddenArr.slice();
+      game.player = playerArr.slice();
+      renderShelf();
+      return true;
+    }
+  };
+
+  renderHome(); render();
+})();
+</script>
+</body>
+</html>

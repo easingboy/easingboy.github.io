@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>潜水艇模拟器</title>
+  <link rel="icon" href="../../icons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page-wrapper">
+    <h1 class="title">🌊 潜水艇模拟器</h1>
+    <p class="subtitle">通过调节压载水舱的注水量来控制潜水艇的浮沉状态</p>
+
+    <div class="ocean-container">
+      <!-- 水面波纹 -->
+      <div class="surface-waves">
+        <div class="wave wave1"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+      </div>
+
+      <!-- 水下气泡 -->
+      <div class="bubbles-container" id="bubblesContainer"></div>
+
+      <!-- 深度标尺 -->
+      <div class="depth-ruler">
+        <div class="ruler-mark" style="top:0%"><span>0m</span></div>
+        <div class="ruler-mark" style="top:20%"><span>20m</span></div>
+        <div class="ruler-mark" style="top:40%"><span>40m</span></div>
+        <div class="ruler-mark" style="top:60%"><span>60m</span></div>
+        <div class="ruler-mark" style="top:80%"><span>80m</span></div>
+        <div class="ruler-mark" style="top:100%"><span>100m</span></div>
+      </div>
+
+      <!-- 潜水艇 -->
+      <div class="submarine-wrapper" id="submarineWrapper">
+        <div class="submarine" id="submarine">
+          <!-- 主体 -->
+          <div class="sub-body">
+            <!-- 指挥塔 -->
+            <div class="conning-tower">
+              <div class="periscope" id="periscope"></div>
+              <div class="antenna"></div>
+            </div>
+            <!-- 舷窗 -->
+            <div class="porthole porthole-1">
+              <div class="porthole-inner"></div>
+            </div>
+            <div class="porthole porthole-2">
+              <div class="porthole-inner"></div>
+            </div>
+            <!-- 螺旋桨 -->
+            <div class="propeller" id="propeller">
+              <div class="blade blade-1"></div>
+              <div class="blade blade-2"></div>
+              <div class="blade blade-3"></div>
+              <div class="blade blade-4"></div>
+            </div>
+            <!-- 前舵 -->
+            <div class="rudder-front"></div>
+            <!-- 尾舵 -->
+            <div class="rudder-rear"></div>
+          </div>
+
+          <!-- 压载水舱（左右两侧） -->
+          <div class="ballast-tanks">
+            <div class="ballast-tank tank-left" id="tankLeft">
+              <div class="tank-label">前水舱</div>
+              <div class="tank-water" id="tankLeftWater"></div>
+              <div class="tank-bubbles" id="tankLeftBubbles"></div>
+            </div>
+            <div class="ballast-tank tank-right" id="tankRight">
+              <div class="tank-label">后水舱</div>
+              <div class="tank-water" id="tankRightWater"></div>
+              <div class="tank-bubbles" id="tankRightBubbles"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 状态标签 -->
+        <div class="status-badge" id="statusBadge">漂浮</div>
+      </div>
+
+      <!-- 海底 -->
+      <div class="seabed">
+        <div class="seabed-rocks"></div>
+        <div class="seabed-plants">
+          <div class="seaweed sw1"></div>
+          <div class="seaweed sw2"></div>
+          <div class="seaweed sw3"></div>
+          <div class="seaweed sw4"></div>
+          <div class="seaweed sw5"></div>
+        </div>
+        <div class="fish fish1">🐠</div>
+        <div class="fish fish2">🐡</div>
+        <div class="fish fish3">🦑</div>
+      </div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+      <div class="panel-header">
+        <span class="panel-icon">🎛️</span>
+        <span>控制面板</span>
+      </div>
+
+      <div class="panel-body">
+        <!-- 水舱控制 -->
+        <div class="tanks-control">
+          <div class="tank-control-item">
+            <div class="tank-control-header">
+              <span class="tank-icon">💧</span>
+              <span>前压载水舱</span>
+              <span class="tank-percent" id="leftPercent">0%</span>
+            </div>
+            <div class="slider-wrapper">
+              <span class="slider-label">空</span>
+              <input type="range" class="tank-slider" id="leftSlider" min="0" max="100" value="0" />
+              <span class="slider-label">满</span>
+            </div>
+            <div class="tank-visual-mini">
+              <div class="tank-mini-water" id="leftMiniWater"></div>
+            </div>
+          </div>
+
+          <div class="tank-control-item">
+            <div class="tank-control-header">
+              <span class="tank-icon">💧</span>
+              <span>后压载水舱</span>
+              <span class="tank-percent" id="rightPercent">0%</span>
+            </div>
+            <div class="slider-wrapper">
+              <span class="slider-label">空</span>
+              <input type="range" class="tank-slider" id="rightSlider" min="0" max="100" value="0" />
+              <span class="slider-label">满</span>
+            </div>
+            <div class="tank-visual-mini">
+              <div class="tank-mini-water" id="rightMiniWater"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 快捷按钮 -->
+        <div class="quick-buttons">
+          <button class="quick-btn btn-float" id="btnFloat">
+            <span class="btn-icon">⬆️</span>
+            <span class="btn-text">漂浮</span>
+            <span class="btn-desc">排空水舱</span>
+          </button>
+          <button class="quick-btn btn-hover" id="btnHover">
+            <span class="btn-icon">⏸️</span>
+            <span class="btn-text">悬浮</span>
+            <span class="btn-desc">半注水</span>
+          </button>
+          <button class="quick-btn btn-sink" id="btnSink">
+            <span class="btn-icon">⬇️</span>
+            <span class="btn-text">下沉</span>
+            <span class="btn-desc">大量注水</span>
+          </button>
+          <button class="quick-btn btn-bottom" id="btnBottom">
+            <span class="btn-icon">🔻</span>
+            <span class="btn-text">沉底</span>
+            <span class="btn-desc">注满水舱</span>
+          </button>
+        </div>
+
+        <!-- 状态信息 -->
+        <div class="status-info">
+          <div class="info-item">
+            <span class="info-label">当前状态</span>
+            <span class="info-value" id="infoState">漂浮</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">当前深度</span>
+            <span class="info-value" id="infoDepth">0 m</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">平均注水量</span>
+            <span class="info-value" id="infoWater">0%</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">浮力状态</span>
+            <span class="info-value" id="infoBuoyancy">正浮力</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 原理说明 -->
+    <div class="principle-card">
+      <h3>🔬 工作原理</h3>
+      <div class="principle-steps">
+        <div class="step">
+          <div class="step-icon">⬆️</div>
+          <div class="step-content">
+            <strong>漂浮</strong>
+            <p>排空压载水舱，整体密度小于海水，产生正浮力，潜艇浮出水面</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">⏸️</div>
+          <div class="step-content">
+            <strong>悬浮</strong>
+            <p>适量注水，使整体密度等于海水密度，浮力与重力平衡，悬停于水中</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">⬇️</div>
+          <div class="step-content">
+            <strong>下沉</strong>
+            <p>大量注水，整体密度大于海水，产生负浮力，潜艇向下运动</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">🔻</div>
+          <div class="step-content">
+            <strong>沉底</strong>
+            <p>注满水舱，密度最大，负浮力最强，潜艇沉至海底</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">With</a> 通过自然语言生成</p>
+    </footer>
+  </div>
+
+  <script src="script.js" type="module"></script>
+</body>
+</html>

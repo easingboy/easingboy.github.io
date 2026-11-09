@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>独轮车的改造与演进 · 3D 物理演示</title>
+<link rel="icon" href="../../icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<style>
+  :root{
+    --ink:#0f1b2d; --sub:#5b6b82; --line:rgba(15,27,45,.10);
+    --blue:#2563eb; --orange:#ea580c; --green:#059669; --red:#dc2626;
+    --card:rgba(255,255,255,.72);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    color:var(--ink); overflow:hidden; background:#dfe9f3;
+  }
+  #scene{
+    position:fixed; inset:0;
+    background:
+      radial-gradient(120% 90% at 50% 8%, #ffffff 0%, #eaf2fb 42%, #d3e2f1 74%, #b9cee4 100%);
+  }
+  #scene canvas{display:block;}
+
+  .panel{
+    background:var(--card);
+    -webkit-backdrop-filter:blur(14px) saturate(1.2);
+    backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid rgba(255,255,255,.85);
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(16,38,68,.14), 0 1px 0 rgba(255,255,255,.7) inset;
+  }
+
+  #topbar{position:fixed;left:24px;top:20px;z-index:5;pointer-events:none;}
+  #topbar h1{margin:0;font-size:20px;letter-spacing:1px;font-weight:700;}
+  #topbar p{margin:4px 0 0;font-size:12.5px;color:var(--sub);letter-spacing:.5px;}
+
+  #steps{
+    position:fixed;left:20px;top:92px;width:246px;z-index:5;
+    padding:12px;display:flex;flex-direction:column;gap:6px;
+  }
+  #steps .cap{font-size:11.5px;color:var(--sub);letter-spacing:2px;padding:2px 6px 6px;}
+  .step{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;
+    cursor:pointer;border:1px solid transparent;transition:.18s;font-size:13.5px;
+  }
+  .step:hover{background:rgba(37,99,235,.08);}
+  .step .no{
+    flex:none;width:24px;height:24px;border-radius:8px;display:grid;place-items:center;
+    font-size:12px;font-weight:700;background:#e8eef7;color:var(--sub);transition:.18s;
+  }
+  .step.done .no{background:#d7e6ff;color:var(--blue);}
+  .step.active{background:linear-gradient(90deg,rgba(37,99,235,.16),rgba(37,99,235,.05));border-color:rgba(37,99,235,.35);font-weight:600;}
+  .step.active .no{background:var(--blue);color:#fff;box-shadow:0 3px 8px rgba(37,99,235,.4);}
+  .step .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  #info{
+    position:fixed;right:20px;top:92px;width:322px;z-index:5;padding:16px 16px 14px;
+    max-height:calc(100vh - 200px);overflow:auto;
+  }
+  #info .head{display:flex;align-items:baseline;gap:8px;}
+  #info .badge{
+    flex:none;font-size:12px;font-weight:700;color:#fff;background:var(--blue);
+    padding:2px 9px;border-radius:20px;
+  }
+  #info h2{margin:0;font-size:16.5px;font-weight:700;line-height:1.4;}
+  .formula{
+    margin:11px 0 10px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:700;
+    background:linear-gradient(90deg,rgba(37,99,235,.10),rgba(37,99,235,.03));
+    border-left:3px solid var(--blue);color:#12408f;letter-spacing:.5px;
+  }
+  #info p.desc{margin:0 0 12px;font-size:12.8px;line-height:1.85;color:#33455c;}
+  .data{border-top:1px dashed var(--line);padding-top:8px;}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:5px 2px;font-size:12.5px;border-radius:6px;transition:.25s;}
+  .row .k{color:var(--sub);}
+  .row .v{font-weight:700;font-variant-numeric:tabular-nums;}
+  .row.hot{background:rgba(234,88,12,.12);}
+  .row.hot .k{color:#9a3412;font-weight:600;}
+  .row.hot .v{color:#c2410c;}
+  .legend{margin-top:10px;border-top:1px dashed var(--line);padding-top:9px;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--sub);}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+
+  #caption{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:4;
+    padding:9px 20px;border-radius:22px;font-size:14px;font-weight:600;letter-spacing:.5px;
+    background:rgba(15,27,45,.78);color:#fff;box-shadow:0 8px 22px rgba(16,38,68,.3);
+    opacity:0;transition:opacity .35s, transform .35s;pointer-events:none;white-space:nowrap;
+  }
+  #caption.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  #bar{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:6;
+    display:flex;align-items:center;gap:10px;padding:10px 14px;
+  }
+  .btn{
+    height:36px;min-width:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);font-size:13px;cursor:pointer;transition:.15s;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:600;
+  }
+  .btn:hover{background:#eef4fc;border-color:rgba(37,99,235,.35);}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;min-width:88px;}
+  .btn.primary:hover{background:#1d4ed8;}
+  .btn[disabled]{opacity:.4;cursor:default;}
+  .track{flex:none;width:210px;height:5px;border-radius:3px;background:#dde6f1;position:relative;overflow:hidden;}
+  .track i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#60a5fa,var(--blue));border-radius:3px;transition:width .12s linear;}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 2px;}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#33455c;cursor:pointer;user-select:none;}
+  .chk input{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;}
+
+  #tip{position:fixed;right:20px;bottom:22px;font-size:11.5px;color:var(--sub);z-index:4;text-align:right;line-height:1.7;}
+
+  /* —— 课堂嵌入模式：?ui=teach 精简（隐藏步骤栏）/?ui=bare 纯净（只留控制条） —— */
+  body[data-ui="teach"] #steps,
+  body[data-ui="teach"] #tip,
+  body[data-ui="bare"]  #steps,
+  body[data-ui="bare"]  #tip,
+  body[data-ui="bare"]  #info,
+  body[data-ui="bare"]  #caption,
+  body[data-ui="bare"]  #topbar{display:none;}
+  body[data-ui="teach"] #info{width:280px;}
+  body[data-ui="teach"] #caption{font-size:17px;padding:11px 26px;bottom:104px;}
+  body[data-ui="teach"] #bar,
+  body[data-ui="bare"]  #bar{transform:translateX(-50%) scale(1.08);transform-origin:bottom center;max-width:96vw;flex-wrap:nowrap;}
+  body[data-ui="teach"] .btn,
+  body[data-ui="bare"]  .btn{white-space:nowrap;padding:0 9px;font-size:12px;min-width:32px;}
+  body[data-ui="teach"] .btn.primary,
+  body[data-ui="bare"]  .btn.primary{min-width:74px;}
+  body[data-ui="teach"] .track,
+  body[data-ui="bare"]  .track{width:110px;}
+  body[data-ui="teach"] .chk,
+  body[data-ui="bare"]  .chk{font-size:11.5px;}
+
+  @media (max-width:1080px){
+    #steps{width:200px;} #info{width:280px;}
+  }
+  @media (max-width:820px){
+    body{overflow:auto;}
+    #topbar{position:relative;left:0;top:0;padding:16px 14px 0;}
+    #steps,#info{position:relative;left:0;right:0;top:0;width:auto;margin:0 14px;max-height:none;}
+    #caption{bottom:78px;font-size:12.5px;}
+    #bar{width:calc(100% - 24px);justify-content:center;flex-wrap:wrap;}
+    .track{width:120px;}
+    #tip{display:none;}
+  }
+</style>
+</head>
+<body>
+  <div id="scene"></div>
+
+  <header id="topbar">
+    <h1>独轮车的改造与演进</h1>
+    <p>初中物理 · 杠杆平衡 · 压强 · 稳度</p>
+  </header>
+
+  <aside id="steps" class="panel">
+    <div class="cap">改造步骤</div>
+    <div id="stepList"></div>
+  </aside>
+
+  <aside id="info" class="panel">
+    <div class="head"><span class="badge" id="infoBadge">①</span><h2 id="infoTitle"></h2></div>
+    <div class="formula" id="infoFormula"></div>
+    <p class="desc" id="infoDesc"></p>
+    <div class="data" id="infoData"></div>
+    <div class="legend">
+      <span><i style="background:#2563eb"></i>动力 / 动力臂</span>
+      <span><i style="background:#ea580c"></i>阻力 / 阻力臂</span>
+      <span><i style="background:#059669"></i>支撑面</span>
+      <span><i style="background:#dc2626"></i>接地压强</span>
+    </div>
+  </aside>
+
+  <div id="caption"></div>
+
+  <div id="bar" class="panel">
+    <button class="btn" id="btnPrev" title="上一步（←）">◀ 上一步</button>
+    <button class="btn primary" id="btnPlay">▶ 自动播放</button>
+    <button class="btn" id="btnNext" title="下一步（→）">下一步 ▶</button>
+    <div class="sep"></div>
+    <div class="track"><i id="trackFill"></i></div>
+    <div class="sep"></div>
+    <label class="chk"><input type="checkbox" id="chkAnno" checked>物理标注</label>
+    <label class="chk"><input type="checkbox" id="chkSpin">自动旋转</label>
+    <button class="btn" id="btnView" title="重置视角">重置视角</button>
+  </div>
+
+  <div id="tip">左键拖拽旋转 · 滚轮缩放 · 右键平移<br>空格 播放/暂停 · ← → 切换步骤</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============================================================
+   一、改造参数：每一步改变的量
+   ============================================================ */
+const WHEEL_R = 0.34, TUBE = 0.055;   // 车轮半径、轮胎截面半径
+const X_NOSE  = -1.05;                // 车身最前端
+const X_DECK0 = -0.55;                // 承载面（横档区）起点
+const X_REAR  =  0.85;                // 承载面末端
+const Z_MID   =  0.46;                // 车辕中段半宽
+const Z_HANDLE=  0.52;                // 把手半宽
+const Z_LEG   =  0.44;                // 立柱半宽
+
+const BASE = {
+  wheelX   : -1.00,   // 轮轴（支点）纵向位置
+  tireW    : 0.11,    // 轮胎宽度
+  deckY    : 0.40,    // 承载面高度
+  handleEnd: 1.35,    // 把手末端
+  legs     : 0,       // 立柱
+  two      : 0,       // 双轮
+  loadN    : 400      // 货物重力
+};
+const DELTA = [
+  {},                                       // ① 初始：木梯架独轮车
+  { wheelX: -0.25, deckY: 0.76 },           // ② 车轮移到车身中部下方
+  { handleEnd: 2.15 },                      // ③ 加长车把手
+  { legs: 1 },                              // ④ 加装两根立柱
+  { tireW: 0.32 },                          // ⑤ 换成宽轮胎
+  { two: 1 }                                // ⑥ 做成双轮
+];
+const P = DELTA.map((_, i) => ({ ...BASE, ...Object.assign({}, ...DELTA.slice(0, i + 1)) }));
+
+const META = [
+  { badge:'①', name:'初始独轮车', title:'原木梯架独轮车（车轮在最前端）',
+    formula:'F₁ · L₁ = F₂ · L₂',
+    desc:'两根长木辕夹住一只自行车式小轮，中间横钉几根木档组成<b>开放式载货面</b>。它本质上是一根杠杆：轮与地的接触点 O 是<b>支点</b>，车和货物的重力是<b>阻力 F₂</b>，双手抬把手的力是<b>动力 F₁</b>。动力臂大于阻力臂，属于<b>省力杠杆</b>。' },
+  { badge:'②', name:'车轮移到中间', title:'把车轮移到车身中部下方',
+    formula:'F₁ = F₂ · L₂ / L₁',
+    desc:'支点 O 向货物重心靠近，<b>阻力臂由 1.00 m 缩到 0.25 m</b>，手的用力从 234 N 降到 86 N，省力得多。代价是：车轮承担的压力由 316 N 增到 464 N —— 这为后面埋下伏笔。' },
+  { badge:'③', name:'加长车把手', title:'把车把手加长 0.80 m',
+    formula:'L₁ ↑  ⇒  F₁ ↓ （省力但费距离）',
+    desc:'把手加长后<b>动力臂 L₁ 由 1.60 m 增到 2.40 m</b>，省力比升到 9.6 倍，手用力降到 57 N。但手要移动的距离更长 —— 这正是杠杆的另一半规律：<b>省力必然费距离</b>。' },
+  { badge:'④', name:'加装两根立柱', title:'在车尾加装两根支撑立柱',
+    formula:'稳度 ∝ 支撑面 / 重心高度',
+    desc:'立柱与车轮形成<b>三点支撑</b>，支撑面由一条窄带变成约 0.92 m² 的三角形区域。<b>支撑面越大、重心越低，稳度越大</b>，停车装货时不再需要人一直扶着车把。' },
+  { badge:'⑤', name:'换成宽轮胎', title:'窄辐条轮换装宽轮胎',
+    formula:'p = F / S',
+    desc:'轮胎由 0.11 m 加宽到 0.32 m，<b>接地面积增大到近 3 倍</b>。由 p=F/S，在压力几乎不变时<b>压强由 56 kPa 降到 19 kPa</b>，车不容易陷进松软的泥土里。' },
+  { badge:'⑥', name:'做成双轮', title:'改装成左右并排的双轮车',
+    formula:'p = F / S　且　支撑面 ↑ ⇒ 稳度 ↑',
+    desc:'独轮车最大的缺点是<b>左右容易侧翻</b>，全靠人的腰劲维持平衡。改成并排双轮后：<b>轮距撑出宽度，支撑面由三角形扩大为约 1.84 m² 的梯形，稳度大幅提高</b>；同时总接地面积翻倍，<b>压强再由 19 kPa 降到 10 kPa</b>。' }
+];
+
+/* ---------- 物理量计算 ---------- */
+const CART_N = 150;        // 空车重力
+const CONTACT_L = 0.08;    // 单只轮胎接地长度（估算）
+function railZat(p, x, zF){        // 车辕在某 x 处的半宽
+  if (x <= X_DECK0) return zF + (Z_MID - zF) * (x - X_NOSE) / (X_DECK0 - X_NOSE);
+  if (x <= X_REAR)  return Z_MID;
+  return Z_MID + (Z_HANDLE - Z_MID) * (x - X_REAR) / Math.max(p.handleEnd - X_REAR, 1e-5);
+}
+function railYat(p, x){            // 车辕在某 x 处的高度
+  const yNose = p.deckY - 0.02, yHi = p.deckY + 0.24;
+  if (x <= X_DECK0) return yNose + (p.deckY - yNose) * (x - X_NOSE) / (X_DECK0 - X_NOSE);
+  if (x <= X_REAR)  return p.deckY;
+  return p.deckY + (yHi - p.deckY) * (x - X_REAR) / Math.max(p.handleEnd - X_REAR, 1e-5);
+}
+function physics(p){
+  const G  = CART_N + p.loadN;
+  const L2 = Math.abs(0 - p.wheelX);                 // 阻力臂：支点 → 重力作用线
+  const L1 = p.handleEnd - p.wheelX;                 // 动力臂：支点 → 动力作用线
+  const F1 = G * L2 / L1;                            // 手的动力
+  const N  = G - F1;                                 // 车轮对地总压力
+  const S  = p.tireW * CONTACT_L * (1 + p.two);      // 总接地面积（双轮翻倍）
+  const pres = N / S;
+  const zF = p.tireW / 2 + 0.055;
+  const wz = (zF + p.tireW / 2 + 0.06) * p.two;      // 双轮时轮心半距
+  const legX = p.handleEnd - 0.30;
+  const len  = Math.abs(legX - p.wheelX);
+  const area = p.legs > 0.01 ? ((2 * wz) + 2 * Z_LEG) / 2 * len : 0;   // 梯形/三角形
+  const cg   = (CART_N * 0.35 + p.loadN * (p.deckY + 0.18)) / G;
+  return { G, L1, L2, ratio: L1 / L2, F1, N, S, p: pres, area, cg, legX, wz, zF };
+}
+const ROWS = [
+  { k:'L1',    label:'动力臂 L₁',   f:v => v.toFixed(2) + ' m' },
+  { k:'L2',    label:'阻力臂 L₂',   f:v => v.toFixed(2) + ' m' },
+  { k:'ratio', label:'省力比 L₁/L₂', f:v => v.toFixed(2) + ' 倍' },
+  { k:'F1',    label:'手的动力 F₁', f:v => v.toFixed(0) + ' N' },
+  { k:'N',     label:'车轮压力 F',  f:v => v.toFixed(0) + ' N' },
+  { k:'S',     label:'总接地面积 S', f:v => v.toFixed(3) + ' m²' },
+  { k:'p',     label:'对地压强 p',  f:v => (v / 1000).toFixed(1) + ' kPa' },
+  { k:'area',  label:'支撑面面积',  f:v => v > 0.02 ? v.toFixed(2) + ' m²' : '≈ 0（须人扶）' },
+  { k:'wz',    label:'车轮形式',    f:v => v > 0.02 ? '双轮 · 轮距 ' + (v * 2).toFixed(2) + ' m' : '单轮' },
+  { k:'cg',    label:'重心高度 h',  f:v => v.toFixed(2) + ' m' }
+];
+const PHYS = P.map(physics);
+
+/* ============================================================
+   二、场景
+   ============================================================ */
+const host = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+const HOME = new THREE.Vector3(-4.3, 3.3, 7.2), HOME_T = new THREE.Vector3(0.20, 0.62, 0);
+camera.position.copy(HOME);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(HOME_T);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 3;
+controls.maxDistance = 22;
+controls.maxPolarAngle = Math.PI * 0.495;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9fb3c8, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+sun.position.set(5, 8.5, 4.5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -7; sun.shadow.camera.right = 7;
+sun.shadow.camera.top = 7;   sun.shadow.camera.bottom = -7;
+sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 30;
+sun.shadow.bias = -0.0008;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.55);
+fill.position.set(-5, 3.5, -5);
+scene.add(fill);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 80),
+  new THREE.MeshStandardMaterial({ color:0xe9f0f6, roughness:0.98, metalness:0 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(80, 80, 0xb8cadd, 0xd3dfea);
+grid.position.y = 0.002;
+grid.material.transparent = true; grid.material.opacity = 0.55;
+scene.add(grid);
+
+/* ============================================================
+   三、建模工具
+   ============================================================ */
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+const ROD = new THREE.CylinderGeometry(1, 1, 1, 20);
+const UP  = new THREE.Vector3(0, 1, 0);
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3();
+
+function span(mesh, ax, ay, az, bx, by, bz, w, h){
+  _a.set(ax, ay, az); _b.set(bx, by, bz);
+  _d.subVectors(_b, _a);
+  const len = Math.max(_d.length(), 1e-5);
+  mesh.position.copy(_a).add(_b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(UP, _d.normalize());
+  mesh.scale.set(w, len, h);
+}
+function beam(mat, w, h){ const m = new THREE.Mesh(BOX, mat); m.castShadow = true; m.receiveShadow = true; m.userData.sec = [w, h]; return m; }
+function rod(mat, r){ const m = new THREE.Mesh(ROD, mat); m.castShadow = true; m.receiveShadow = true; m.userData.sec = [r, r]; return m; }
+function spanOf(m, ax, ay, az, bx, by, bz){ span(m, ax, ay, az, bx, by, bz, m.userData.sec[0], m.userData.sec[1]); }
+
+const M = {
+  wood  : new THREE.MeshStandardMaterial({ color:0xdcb98a, roughness:0.85, metalness:0.0 }),  // 原木车辕
+  wood2 : new THREE.MeshStandardMaterial({ color:0xc8a377, roughness:0.88, metalness:0.0 }),  // 木档/轮叉
+  wood3 : new THREE.MeshStandardMaterial({ color:0xb98f61, roughness:0.9,  metalness:0.0 }),
+  rubber: new THREE.MeshStandardMaterial({ color:0x2b3038, roughness:0.92, metalness:0.0 }),  // 黑色充气胎
+  rimM  : new THREE.MeshStandardMaterial({ color:0xeef3f8, metalness:0.8,  roughness:0.25 }), // 白色金属圈
+  steel : new THREE.MeshStandardMaterial({ color:0x9aa7b5, metalness:0.8,  roughness:0.3 }),  // 辐条/轴
+  metal : new THREE.MeshStandardMaterial({ color:0xdfe6ee, metalness:0.85, roughness:0.25 }), // 轮毂
+  crate1: new THREE.MeshStandardMaterial({ color:0xc0854c, roughness:0.8 }),
+  crate2: new THREE.MeshStandardMaterial({ color:0x93a865, roughness:0.8 })
+};
+
+/* ---------- 车轮（自行车式：黑胎 + 白圈 + 辐条） ---------- */
+function makeWheel(){
+  const g = new THREE.Group(); scene.add(g);
+  const tire = new THREE.Mesh(new THREE.TorusGeometry(WHEEL_R - TUBE, TUBE, 16, 48), M.rubber);
+  const rim  = new THREE.Mesh(new THREE.TorusGeometry(WHEEL_R - TUBE * 1.7, TUBE * 0.5, 10, 44), M.rimM);
+  const hub  = new THREE.Mesh(ROD, M.metal); hub.userData.sec = [0.06, 0.06];
+  [tire, rim, hub].forEach(m => { m.castShadow = true; m.receiveShadow = true; g.add(m); });
+  const spokes = [];
+  for (let i = 0; i < 10; i++){
+    const s = new THREE.Mesh(BOX, M.steel); s.castShadow = true; g.add(s); spokes.push(s);
+  }
+  spokes.forEach((s, i) => {
+    const a = i / 10 * Math.PI * 2, r = WHEEL_R - TUBE * 1.5;
+    span(s, 0, 0, 0, Math.cos(a) * r, Math.sin(a) * r, 0, 0.014, 0.010);
+  });
+  return { g, tire, rim, hub };
+}
+const wA = makeWheel(), wB = makeWheel();
+
+/* ---------- 车辕（前段 / 承载段 / 上翘把手段） ---------- */
+const railF = [beam(M.wood, 0.07, 0.085), beam(M.wood, 0.07, 0.085)];   // 前段（收拢夹轮）
+const railM = [beam(M.wood, 0.07, 0.085), beam(M.wood, 0.07, 0.085)];   // 承载段（水平）
+const railR = [beam(M.wood, 0.07, 0.085), beam(M.wood, 0.07, 0.085)];   // 把手段（上翘）
+const fork  = [beam(M.wood2, 0.05, 0.07), beam(M.wood2, 0.05, 0.07)];   // 轮叉
+const grip  = [rod(M.wood3, 0.045), rod(M.wood3, 0.045)];               // 握把
+const axle  = rod(M.steel, 0.026);                                      // 车轴
+const rungs = []; for (let i = 0; i < 6; i++) rungs.push(rod(M.wood2, 0.028));  // 横档
+const crossNose = rod(M.wood2, 0.03), crossRear = rod(M.wood2, 0.03);
+const crossHand = rod(M.wood2, 0.03), crossLeg = rod(M.wood2, 0.028);
+[...railF, ...railM, ...railR, ...fork, ...grip, axle, ...rungs,
+ crossNose, crossRear, crossHand, crossLeg].forEach(m => scene.add(m));
+
+/* ---------- 立柱 ---------- */
+const legL = rod(M.wood2, 0.036), legR = rod(M.wood2, 0.036);
+const braceL = beam(M.wood2, 0.04, 0.06), braceR = beam(M.wood2, 0.04, 0.06);
+const footL = new THREE.Mesh(BOX, M.wood3), footR = new THREE.Mesh(BOX, M.wood3);
+[legL, legR, braceL, braceR, footL, footR].forEach(m => { m.castShadow = true; scene.add(m); });
+
+/* ---------- 货物 ---------- */
+function makeCargo(items){
+  const g = new THREE.Group(); scene.add(g);
+  const mats = [M.crate1, M.crate2];
+  const ms = items.map((it, i) => {
+    const m = new THREE.Mesh(BOX, mats[i % 2]);
+    m.castShadow = true; m.receiveShadow = true; g.add(m);
+    return { m, it };
+  });
+  return { ms };
+}
+const cargo = makeCargo([
+  { x:-0.22, z:-0.15, w:0.60, h:0.30, d:0.36 },
+  { x: 0.45, z: 0.16, w:0.50, h:0.26, d:0.42 }
+]);
+function layoutCargo(y0){
+  cargo.ms.forEach(({ m, it }) => {
+    m.scale.set(it.w, it.h, it.d);
+    m.position.set(it.x, y0 + it.h / 2, it.z);
+  });
+}
+
+/* ============================================================
+   四、物理标注
+   ============================================================ */
+const anno = new THREE.Group(); scene.add(anno);
+
+function makeLabel(text, color){
+  const cvs = document.createElement('canvas');
+  cvs.width = 320; cvs.height = 80;
+  const tex = new THREE.CanvasTexture(cvs);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true, depthTest:false }));
+  spr.renderOrder = 999;
+  spr.scale.set(0.56, 0.14, 1);
+  spr.userData = { cvs, tex, color, text:null };
+  setLabel(spr, text);
+  anno.add(spr);
+  return spr;
+}
+function setLabel(spr, text){
+  const d = spr.userData;
+  if (d.text === text) return;
+  d.text = text;
+  const c = d.cvs.getContext('2d'), W = d.cvs.width, H = d.cvs.height;
+  const font = 'bold 36px "PingFang SC","Microsoft YaHei",sans-serif';
+  c.clearRect(0, 0, W, H);
+  c.font = font;
+  const tw = Math.min(c.measureText(text).width, W - 40);
+  const bw = tw + 30, bh = 54, bx = (W - bw) / 2, by = (H - bh) / 2;
+  c.fillStyle = 'rgba(255,255,255,.93)';
+  c.strokeStyle = d.color; c.lineWidth = 4;
+  c.beginPath();
+  if (c.roundRect) c.roundRect(bx, by, bw, bh, 14); else c.rect(bx, by, bw, bh);
+  c.fill(); c.stroke();
+  c.fillStyle = d.color;
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = font;
+  c.fillText(text, W / 2, H / 2 + 2);
+  d.tex.needsUpdate = true;
+}
+const C_BLUE = '#2563eb', C_ORANGE = '#ea580c', C_RED = '#dc2626', C_GREEN = '#059669', C_INK = '#0f1b2d';
+
+const lblO  = makeLabel('O 支点', C_INK);
+const lblG  = makeLabel('G 重心', C_ORANGE);
+const lblF1 = makeLabel('F₁ 动力', C_BLUE);
+const lblL1 = makeLabel('L₁', C_BLUE);
+const lblL2 = makeLabel('L₂', C_ORANGE);
+const lblP  = makeLabel('接地压强', C_RED);
+
+const lineL1 = rod(new THREE.MeshBasicMaterial({ color:C_BLUE }), 0.012);
+const lineL2 = rod(new THREE.MeshBasicMaterial({ color:C_ORANGE }), 0.012);
+const rodO   = rod(new THREE.MeshBasicMaterial({ color:C_INK }), 0.008);      // 支点作用线
+const rodG   = rod(new THREE.MeshBasicMaterial({ color:C_ORANGE }), 0.008);   // 重力作用线
+const rodF   = rod(new THREE.MeshBasicMaterial({ color:C_BLUE }), 0.008);     // 动力作用线
+[lineL1, lineL2, rodO, rodG, rodF].forEach(m => { m.castShadow = false; anno.add(m); m.material.depthTest = false; });
+
+const arrF = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 0.5, C_BLUE, 0.14, 0.09);
+const arrG = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(), 0.5, C_ORANGE, 0.13, 0.085);
+[arrF, arrG].forEach(a => { a.line.material.depthTest = false; a.cone.material.depthTest = false; anno.add(a); });
+
+const discO = new THREE.Mesh(new THREE.CircleGeometry(0.11, 28),
+  new THREE.MeshBasicMaterial({ color:C_INK, transparent:true, opacity:.35, depthTest:false }));
+discO.rotation.x = -Math.PI / 2; anno.add(discO);
+
+function makePatch(){
+  const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40),
+    new THREE.MeshBasicMaterial({ color:C_RED, transparent:true, opacity:.45, depthTest:false }));
+  m.rotation.x = -Math.PI / 2; anno.add(m); return m;
+}
+const patchA = makePatch(), patchB = makePatch();
+
+const triGeo = new THREE.BufferGeometry();
+triGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(18), 3));
+const tri = new THREE.Mesh(triGeo, new THREE.MeshBasicMaterial({
+  color:C_GREEN, transparent:true, opacity:.22, side:THREE.DoubleSide, depthTest:false }));
+anno.add(tri);
+
+/* ============================================================
+   五、把参数应用到模型
+   ============================================================ */
+function apply(p){
+  const ph = physics(p);
+  const yNose = p.deckY - 0.02, yHi = p.deckY + 0.24;
+  const zF  = ph.zF;                    // 车辕前端半宽（夹住车轮）
+  const wz  = ph.wz;                    // 双轮时轮心半距
+  const zFork = p.tireW / 2 + 0.03 + wz;// 轮叉下端半距
+  const zAxle = Math.max(railZat(p, p.wheelX, zF) + 0.045, zFork, wz + p.tireW / 2 + 0.02);
+  const yAxleTop = railYat(p, p.wheelX);
+
+  // —— 车轮（两只，单轮时重合在中间，只显示一只）
+  [[wA, -wz, true], [wB, wz, p.two > 0.01]].forEach(([w, z, vis]) => {
+    w.g.visible = vis;
+    w.g.position.set(p.wheelX, WHEEL_R, z);
+    w.tire.scale.set(1, 1, p.tireW / (2 * TUBE));
+    w.rim.scale.set(1, 1, p.tireW / (2 * TUBE) * 0.5);
+    spanOf(w.hub, 0, 0, -p.tireW / 2 - 0.02, 0, 0, p.tireW / 2 + 0.02);
+  });
+
+  // —— 车辕：前段（收拢）→ 承载段（水平）→ 把手段（上翘）
+  for (const s of [0, 1]){
+    const sg = s === 0 ? -1 : 1;
+    spanOf(railF[s], X_NOSE, yNose, sg * zF,      X_DECK0, p.deckY, sg * Z_MID);
+    spanOf(railM[s], X_DECK0, p.deckY, sg * Z_MID, X_REAR, p.deckY, sg * Z_MID);
+    spanOf(railR[s], X_REAR,  p.deckY, sg * Z_MID, p.handleEnd, yHi, sg * Z_HANDLE);
+    // 轮叉：车辕 → 轮轴
+    spanOf(fork[s], p.wheelX, yAxleTop, sg * railZat(p, p.wheelX, zF), p.wheelX, WHEEL_R, sg * zFork);
+    spanOf(grip[s], p.handleEnd - 0.24, yHi, sg * Z_HANDLE, p.handleEnd, yHi, sg * Z_HANDLE);
+  }
+  spanOf(axle, p.wheelX, WHEEL_R, -zAxle, p.wheelX, WHEEL_R, zAxle);
+
+  // —— 承载面横档
+  rungs.forEach((r, i) => {
+    const x = X_DECK0 + (i + 0.5) / rungs.length * (X_REAR - X_DECK0);
+    spanOf(r, x, p.deckY - 0.028, -Z_MID, x, p.deckY - 0.028, Z_MID);
+  });
+  spanOf(crossNose,  X_NOSE,  yNose,    -zF - 0.03,       X_NOSE,  yNose,    zF + 0.03);
+  spanOf(crossRear,  X_REAR,  p.deckY,  -Z_MID - 0.03,    X_REAR,  p.deckY,  Z_MID + 0.03);
+  spanOf(crossHand,  p.handleEnd - 0.20, yHi, -Z_HANDLE - 0.02, p.handleEnd - 0.20, yHi, Z_HANDLE + 0.02);
+
+  // —— 货物
+  layoutCargo(p.deckY);
+
+  // —— 立柱
+  const legX = ph.legX, legTop = railYat(p, legX), legH = legTop * p.legs;
+  const legOn = p.legs > 0.01;
+  legL.visible = legR.visible = footL.visible = footR.visible = legOn;
+  braceL.visible = braceR.visible = crossLeg.visible = legOn;
+  spanOf(legL, legX, legTop, -Z_LEG, legX, legTop - legH, -railZat(p, legX, zF));
+  spanOf(legR, legX, legTop,  Z_LEG, legX, legTop - legH,  railZat(p, legX, zF));
+  spanOf(braceL, legX, 0.14, -Z_LEG, legX - 0.45, railYat(p, legX - 0.45), -railZat(p, legX - 0.45, zF));
+  spanOf(braceR, legX, 0.14,  Z_LEG, legX - 0.45, railYat(p, legX - 0.45),  railZat(p, legX - 0.45, zF));
+  spanOf(crossLeg, legX, 0.15, -Z_LEG, legX, 0.15, Z_LEG);
+  footL.scale.set(0.13, 0.05, 0.15); footL.position.set(legX, 0.025, -Z_LEG);
+  footR.scale.set(0.13, 0.05, 0.15); footR.position.set(legX, 0.025,  Z_LEG);
+
+  // —— 标注
+  if (anno.visible){
+    const zg = 0.80, zf = 1.10;
+    spanOf(rodO,   p.wheelX, 0.02, zg, p.wheelX, 0.90, zg);
+    spanOf(rodG,   0, 0.02, zg, 0, ph.cg, zg);
+    spanOf(rodF,   p.handleEnd, 0.02, zf, p.handleEnd, yHi + 0.02, zf);
+    spanOf(lineL2, p.wheelX, 0.03, zg, 0, 0.03, zg);
+    spanOf(lineL1, p.wheelX, 0.03, zf, p.handleEnd, 0.03, zf);
+
+    lblO.position.set(p.wheelX, 0.14, 0);
+    lblG.position.set(0, ph.cg + 0.18, 0);
+    lblF1.position.set(p.handleEnd, yHi + 0.62, 0);
+    lblL2.position.set((p.wheelX + 0) / 2, 0.15, zg);
+    lblL1.position.set((p.wheelX + p.handleEnd) / 2, 0.15, zf);
+    lblP.position.set(p.wheelX, 0.16, -Math.max(wz, 0.1) - 0.45);
+
+    arrF.position.set(p.handleEnd, yHi + 0.08, 0);
+    arrF.setDirection(new THREE.Vector3(0, 1, 0));
+    arrF.setLength(Math.min(0.78, 0.30 + 0.0011 * ph.F1), 0.13, 0.08);
+    arrG.position.set(0, ph.cg - 0.05, 0);
+    arrG.setDirection(new THREE.Vector3(0, -1, 0));
+    arrG.setLength(0.42, 0.12, 0.08);
+
+    discO.position.set(p.wheelX, 0.012, 0);
+    patchA.position.set(p.wheelX, 0.008, -wz);
+    patchA.scale.set(CONTACT_L / 2, p.tireW / 2, 1);
+    patchB.visible = p.two > 0.01;
+    patchB.position.set(p.wheelX, 0.008, wz);
+    patchB.scale.set(CONTACT_L / 2, p.tireW / 2, 1);
+
+    if (legOn){
+      const a = triGeo.attributes.position.array, y = 0.006;
+      const set = (i, x, z) => { a[i*3] = x; a[i*3+1] = y; a[i*3+2] = z; };
+      set(0, p.wheelX, -wz); set(1, legX, -Z_LEG); set(2, legX, Z_LEG);
+      set(3, p.wheelX, -wz); set(4, legX,  Z_LEG); set(5, p.wheelX, wz);
+      triGeo.attributes.position.needsUpdate = true;
+      triGeo.computeBoundingSphere();
+      tri.visible = true;
+    } else tri.visible = false;
+  }
+  return ph;
+}
+
+/* ============================================================
+   六、动画状态机
+   ============================================================ */
+const KEYS = ['wheelX','tireW','deckY','handleEnd','legs','two','loadN'];
+let live = { ...P[0] };
+let idx = 0;
+let anim = null;
+let playing = false, holdT = 0;
+const TRANS = 1.7, HOLD = 2.6;
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+function goto(i, instant){
+  i = Math.max(0, Math.min(P.length - 1, i));
+  if (instant){ live = { ...P[i] }; anim = null; idx = i; syncUI(); return; }
+  if (i === idx && !anim) return;
+  const fromIdx = idx;
+  idx = i;
+  anim = { from:{ ...live }, to:{ ...P[i] }, t:0, dur:TRANS, fromIdx };
+  syncUI();
+}
+function stepAnim(dt){
+  if (anim){
+    anim.t = Math.min(1, anim.t + dt / anim.dur);
+    const k = ease(anim.t);
+    for (const key of KEYS) live[key] = anim.from[key] + (anim.to[key] - anim.from[key]) * k;
+    if (anim.t >= 1){ live = { ...anim.to }; anim = null; }
+  } else if (playing){
+    holdT += dt;
+    if (holdT >= HOLD){
+      holdT = 0;
+      if (idx >= P.length - 1){ playing = false; syncUI(); }
+      else goto(idx + 1);
+    }
+  }
+}
+
+/* ============================================================
+   七、界面
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const stepList = $('stepList');
+META.forEach((m, i) => {
+  const el = document.createElement('div');
+  el.className = 'step';
+  el.innerHTML = `<span class="no">${m.badge}</span><span class="tx">${m.name}</span>`;
+  el.onclick = () => { playing = false; holdT = 0; goto(i); };
+  stepList.appendChild(el);
+});
+const stepEls = [...stepList.children];
+
+const dataEls = ROWS.map(r => {
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = `<span class="k">${r.label}</span><span class="v"></span>`;
+  $('infoData').appendChild(d);
+  return d;
+});
+
+function syncUI(){
+  const m = META[idx];
+  $('infoBadge').textContent = m.badge;
+  $('infoTitle').textContent = m.title;
+  $('infoFormula').textContent = m.formula;
+  $('infoDesc').innerHTML = m.desc;
+  $('btnPrev').disabled = idx === 0;
+  $('btnNext').disabled = idx === P.length - 1;
+  $('btnPlay').textContent = playing ? '❚❚ 暂停' : '▶ 自动播放';
+  stepEls.forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+    el.classList.toggle('done', i < idx);
+  });
+  const cur = PHYS[idx], prev = idx > 0 ? PHYS[idx - 1] : null;
+  ROWS.forEach((r, i) => {
+    dataEls[i].querySelector('.v').textContent = r.f(cur[r.k]);
+    dataEls[i].classList.toggle('hot', !!prev && Math.abs(cur[r.k] - prev[r.k]) > 1e-6);
+  });
+  showCaption(`${m.badge} ${m.name}`);
+}
+let capTimer = 0;
+function showCaption(txt){
+  const c = $('caption');
+  c.textContent = txt;
+  c.classList.add('show');
+  clearTimeout(capTimer);
+  capTimer = setTimeout(() => c.classList.remove('show'), 2200);
+}
+
+$('btnPrev').onclick = () => { playing = false; holdT = 0; goto(idx - 1); };
+$('btnNext').onclick = () => { playing = false; holdT = 0; goto(idx + 1); };
+$('btnPlay').onclick = () => {
+  playing = !playing; holdT = 0;
+  if (playing && idx === P.length - 1) goto(0);
+  syncUI();
+};
+$('btnView').onclick = () => { camera.position.copy(HOME); controls.target.copy(HOME_T); controls.update(); };
+$('chkAnno').onchange = e => { anno.visible = e.target.checked; };
+$('chkSpin').onchange = e => { controls.autoRotate = e.target.checked; controls.autoRotateSpeed = 0.9; };
+addEventListener('keydown', e => {
+  if (e.code === 'Space'){ e.preventDefault(); $('btnPlay').click(); }
+  if (e.code === 'ArrowRight'){ playing = false; goto(idx + 1); }
+  if (e.code === 'ArrowLeft'){ playing = false; goto(idx - 1); }
+});
+
+// URL 参数：?stage=N 直达第 N 步；?ui=teach|bare 切换界面模式
+const _q = new URLSearchParams(location.search);
+const _s = parseInt(_q.get('stage'), 10);
+if (!isNaN(_s)) goto(Math.max(0, Math.min(P.length - 1, _s)), true);
+const _ui = _q.get('ui');
+if (_ui === 'teach' || _ui === 'bare') document.body.dataset.ui = _ui;
+
+function resize(){
+  const w = host.clientWidth, h = host.clientHeight;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+addEventListener('resize', resize);
+resize();
+syncUI();
+
+/* ============================================================
+   八、主循环
+   ============================================================ */
+let last = performance.now(), labelT = 0;
+function loop(now){
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  stepAnim(dt);
+  const ph = apply(live);
+
+  labelT += dt;
+  if (labelT > 0.12){
+    labelT = 0;
+    setLabel(lblL1, `L₁ = ${ph.L1.toFixed(2)} m`);
+    setLabel(lblL2, `L₂ = ${ph.L2.toFixed(2)} m`);
+    setLabel(lblF1, `F₁ = ${ph.F1.toFixed(0)} N`);
+    setLabel(lblG,  `G = ${ph.G.toFixed(0)} N`);
+    setLabel(lblP,  `p = ${(ph.p / 1000).toFixed(0)} kPa`);
+  }
+  const pos = anim ? anim.fromIdx + (idx - anim.fromIdx) * anim.t : idx;
+  $('trackFill').style.width = (pos / (P.length - 1) * 100) + '%';
+
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Letter J minimal">
+  <defs>
+    <linearGradient id="jg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="14" fill="url(#jg1)"/>
+
+  <!-- 几何居中、加粗的字母 J -->
+  <path d="M44.5 16v22a10 10 0 0 1-10 10h-6.5a8.5 8.5 0 0 1-8.5-8.5"
+        fill="none" stroke="#fff" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

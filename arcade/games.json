@@ -1,0 +1,16 @@
+[
+  { "id": "dino",        "name": "恐龙快打",           "core": "fbneo", "rom": "roms/dino.zip" },
+  { "id": "kof97",       "name": "拳皇97",             "core": "fbneo", "rom": "roms/kof97.zip", "bios": "neogeo.zip", "dontExtractBIOS": true },
+  { "id": "kof98",       "name": "拳皇98",             "core": "fbneo", "rom": "roms/kof98.zip", "bios": "neogeo.zip", "dontExtractBIOS": true },
+  { "id": "samsho",      "name": "侍魂",           "core": "fbneo", "rom": "roms/samsho.zip" },
+  { "id": "kov",         "name": "三国战纪",           "core": "fbneo", "rom": "roms/kov.zip" },
+  { "id": "kov115",      "name": "三国战纪115",     "core": "fbneo", "rom": "roms/kov115.zip" },
+  { "id": "kov2",        "name": "三国战纪2",          "core": "fbneo", "rom": "roms/kov2.zip" },
+  { "id": "kovplus",     "name": "三国战纪119",      "core": "fbneo", "rom": "roms/kovplus.zip" },
+  { "id": "mslug4",      "name": "合金弹头",       "core": "fbneo", "rom": "roms/mslug4.zip" },
+  { "id": "knights",     "name": "圆桌骑士",       "core": "fbneo", "rom": "roms/knights.zip" },
+  { "id": "dynwar",      "name": "吞食天地",      "core": "fbneo", "rom": "roms/dynwar.zip" },
+  { "id": "olds100a",    "name": "西游释厄传",         "core": "fbneo", "rom": "roms/olds100a.zip" },
+  { "id": "oldsplus",    "name": "西游释厄传Super",   "core": "fbneo", "rom": "roms/oldsplus.zip" },
+  { "id": "orlegend105t","name": "西游释厄传105台湾版","core": "fbneo", "rom": "roms/orlegend105t.zip" }
+]

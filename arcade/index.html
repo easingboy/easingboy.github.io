@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arcade Player</title>
+  <link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #0d0d0d; color: #ddd; font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    body { display: flex; flex-direction: column; }
+    header { flex: none; display: flex; align-items: center; gap: 16px; padding: 8px 16px; background: #1a1a1a; border-bottom: 2px solid #c0272d; }
+    header h1 { margin: 0; font-size: 16px; color: #fff; letter-spacing: 1px; white-space: nowrap; }
+    header select { background: #262626; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 3px 6px; font: inherit; font-size: 13px; }
+    header .keys { margin-left: auto; font-size: 12px; color: #aaa; }
+    header kbd { background: #333; border: 1px solid #555; border-radius: 3px; padding: 0 5px; color: #fff; font-family: inherit; }
+    main { flex: 1; min-height: 0; position: relative; }
+    #game { position: absolute; inset: 0; }
+    #msg { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: #c0272d; font-size: 15px; text-align: center; padding: 24px; }
+    header button { background: #262626; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 3px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+    header button:hover { background: #333; }
+    #upload { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 16px; overflow: auto; }
+    #upload .card { width: 100%; max-width: 420px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 20px; }
+    #upload h2 { margin: 0 0 14px; font-size: 16px; color: #fff; }
+    #upload label { display: block; margin: 12px 0 4px; font-size: 12px; color: #aaa; }
+    #upload input[type=text], #upload select { width: 100%; box-sizing: border-box; background: #262626; color: #fff; border: 1px solid #555; border-radius: 3px; padding: 6px 8px; font: inherit; }
+    #upload .check { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: #ddd; font-size: 13px; }
+    #upload .check input { margin: 0; }
+    #upload .row { display: flex; align-items: center; gap: 10px; }
+    #upload .row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #aaa; font-size: 13px; }
+    #upload button { background: #c0272d; color: #fff; border: 0; border-radius: 3px; padding: 7px 14px; font: inherit; cursor: pointer; }
+    #upload button.sec { background: #333; }
+    #upload button:disabled { background: #444; color: #888; cursor: not-allowed; }
+    #upload .err { min-height: 18px; margin-top: 10px; font-size: 12px; color: #ff6b6b; }
+    #upload .tip { margin-top: 12px; font-size: 12px; color: #888; line-height: 1.6; }
+    #upload .go { margin-top: 14px; width: 100%; }
+    #upload .go + .go { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Arcade Player</h1>
+    <select id="picker"></select>
+    <button id="uploadBtn" type="button">上传 ROM</button>
+    <div class="keys">
+      1P 移动 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> &nbsp;
+      按钮 <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd> &nbsp;
+      投币 <kbd>1</kbd>(1P) <kbd>2</kbd>(2P) &nbsp;
+      开始 <kbd>B</kbd>(1P) <kbd>Enter</kbd>(2P) &nbsp;
+      存档 <kbd>Q</kbd> 读档 <kbd>E</kbd>
+    </div>
+  </header>
+  <main>
+    <div id="game"></div>
+    <div id="msg"></div>
+    <div id="upload">
+      <div class="card">
+        <h2>上传本地 ROM</h2>
+        <div class="row">
+          <button id="pickFile" type="button" class="sec">选择 ZIP 文件</button>
+          <span id="fileName">未选择文件</span>
+        </div>
+        <input id="fileInput" type="file" accept=".zip,application/zip" hidden>
+        <label for="romName">游戏名称</label>
+        <input id="romName" type="text" maxlength="40">
+        <label for="romCore">模拟核心</label>
+        <select id="romCore">
+          <option value="fbneo">fbneo - FinalBurn Neo（默认，支持最广）</option>
+          <option value="fbalpha2012_cps1">fbalpha2012_cps1 - FBA 2012（仅 CPS1）</option>
+          <option value="mame2003_plus">mame2003_plus - MAME 2003 Plus</option>
+          <option value="mame2003">mame2003 - MAME 2003 (0.78)</option>
+        </select>
+        <label class="check"><input id="romBios" type="checkbox"> 需要 Neo Geo BIOS（拳皇、合金弹头等 Neo Geo 游戏）</label>
+        <div class="err" id="uploadErr"></div>
+        <button id="startRom" type="button" class="go" disabled>开始游戏</button>
+        <button id="cancelRom" type="button" class="go sec">取消</button>
+        <div class="tip">
+          文件只在本浏览器内读取，不会上传到服务器；刷新或切换游戏后需重新选择。<br>
+          若画面一直黑屏，多半是核心与 ROM 版本不匹配，点顶部「上传 ROM」换个核心重试。<br>
+          请只加载你合法拥有的 ROM。
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function fail(text) {
+      var msg = document.getElementById('msg');
+      msg.textContent = text;
+      msg.style.display = 'flex';
+    }
+
+    var gamesList = [];
+    var emuStarted = false;
+    var $ = function (id) { return document.getElementById(id); };
+
+    // 启动模拟器。game: {id,name,core,rom,bios,dontExtractBIOS}；rom 可以是路径字符串或 File 对象
+    function startEmu(game) {
+      emuStarted = true;
+      document.title = game.name + ' - Arcade Player';
+      $('title').textContent = game.name;
+
+      window.EJS_player = '#game';
+      window.EJS_core = game.core || 'fbneo';
+      window.EJS_pathtodata = 'ejs/';
+      window.EJS_gameUrl = game.rom;
+      window.EJS_gameName = game.id;
+      window.EJS_threads = false;
+      window.EJS_startOnLoaded = false;
+      window.EJS_language = 'zh-CN';
+      if (game.bios) window.EJS_biosUrl = game.bios;
+      if (game.dontExtractBIOS) window.EJS_dontExtractBIOS = true;
+      window.EJS_defaultControls = {
+        0: {
+          0:  { value: 'j', value2: 'BUTTON_2' },
+          1:  { value: 'l', value2: 'BUTTON_4' },
+          2:  { value: '1', value2: 'SELECT' },
+          3:  { value: 'b', value2: 'START' },
+          4:  { value: 'w', value2: 'DPAD_UP' },
+          5:  { value: 's', value2: 'DPAD_DOWN' },
+          6:  { value: 'a', value2: 'DPAD_LEFT' },
+          7:  { value: 'd', value2: 'DPAD_RIGHT' },
+          8:  { value: 'k', value2: 'BUTTON_1' },
+          9:  { value: 'semi-colon', value2: 'BUTTON_3' },
+          24: { value: 'q' },
+          25: { value: 'e' }
+        },
+        1: {
+          2: { value: '2', value2: 'SELECT' },
+          3: { value: 'enter', value2: 'START' }
+        },
+        2: {},
+        3: {}
+      };
+
+      var script = document.createElement('script');
+      script.src = 'ejs/loader.js';
+      document.body.appendChild(script);
+    }
+
+    // ===== 本地 ROM 上传（仅本次页面会话有效，不做持久化）=====
+    var pickedFile = null;
+
+    function showUpload() {
+      $('upload').style.display = 'flex';
+    }
+
+    function setUploadErr(text) { $('uploadErr').textContent = text || ''; }
+
+    function onFilePicked(file) {
+      pickedFile = null;
+      $('startRom').disabled = true;
+      setUploadErr('');
+      if (!file) { $('fileName').textContent = '未选择文件'; return; }
+      $('fileName').textContent = file.name;
+      if (!/\.zip$/i.test(file.name)) return setUploadErr('只支持 .zip 格式的 ROM 文件');
+      if (!file.size) return setUploadErr('文件是空的');
+      // 校验 zip 魔数 "PK"
+      file.slice(0, 2).arrayBuffer().then(function (buf) {
+        var b = new Uint8Array(buf);
+        if (b[0] !== 0x50 || b[1] !== 0x4B) return setUploadErr('这不是有效的 ZIP 文件');
+        pickedFile = file;
+        $('startRom').disabled = false;
+        var base = file.name.replace(/\.zip$/i, '');
+        $('romName').value = base;
+        // 文件名与内置游戏同名：沿用其核心和 BIOS 配置
+        var known = gamesList.filter(function (g) { return g.id === base.toLowerCase(); })[0];
+        if (known) {
+          $('romCore').value = known.core || 'fbneo';
+          $('romBios').checked = !!known.bios;
+        }
+      }).catch(function () { setUploadErr('读取文件失败，请重试'); });
+    }
+
+    function startLocal() {
+      if (!pickedFile) return;
+      var base = pickedFile.name.replace(/\.zip$/i, '');
+      var name = $('romName').value.trim() || base;
+      var picker = $('picker');
+      var opt = document.createElement('option');
+      opt.value = '__local__';
+      opt.textContent = '[本地] ' + name;
+      picker.appendChild(opt);
+      picker.value = '__local__';
+      $('upload').style.display = 'none';
+      var game = {
+        id: 'local-' + base.toLowerCase(),
+        name: name,
+        core: $('romCore').value,
+        rom: pickedFile
+      };
+      if ($('romBios').checked) { game.bios = 'neogeo.zip'; game.dontExtractBIOS = true; }
+      startEmu(game);
+    }
+
+    $('uploadBtn').addEventListener('click', function () {
+      // 模拟器已在运行时无法热切换：回到“未加载游戏”的上传页（当前进度不会保存）
+      if (emuStarted) location.search = '?upload=1';
+      else showUpload();
+    });
+    $('pickFile').addEventListener('click', function () { $('fileInput').click(); });
+    $('fileInput').addEventListener('change', function () { onFilePicked(this.files[0]); });
+    $('startRom').addEventListener('click', startLocal);
+    $('cancelRom').addEventListener('click', function () { location.href = location.pathname; });
+
+    fetch('games.json', { cache: 'no-store' })
+      .then(function (res) { return res.json(); })
+      .then(function (games) {
+        if (!Array.isArray(games) || !games.length) return fail('games.json 里没有游戏');
+        gamesList = games;
+
+        var params = new URLSearchParams(location.search);
+        var uploadMode = params.has('upload');
+        var id = params.get('game');
+        var game = uploadMode ? null : games.filter(function (g) { return g.id === id; })[0];
+
+        if (!uploadMode) {
+          if (id && !game) {
+            fail('找不到游戏：' + id);
+          } else if (!game) {
+            game = games[0];
+            history.replaceState(null, '', '?game=' + encodeURIComponent(game.id));
+          }
+        }
+
+        var picker = $('picker');
+        if (uploadMode) {
+          var ph = document.createElement('option');
+          ph.textContent = '请选择游戏…';
+          ph.disabled = true;
+          ph.selected = true;
+          picker.appendChild(ph);
+        }
+        games.forEach(function (g) {
+          var opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.name;
+          if (game && g.id === game.id) opt.selected = true;
+          picker.appendChild(opt);
+        });
+        picker.addEventListener('change', function () {
+          if (picker.value === '__local__') return;
+          location.search = '?game=' + encodeURIComponent(picker.value);
+        });
+
+        if (uploadMode) return showUpload();
+        if (game) startEmu(game);
+      })
+      .catch(function (err) { fail('加载 games.json 失败：' + err.message); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>jiao.oaij.art</title>
+<script src="config.js"></script>
+
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+<style>
+  :root {
+    --card-bg: rgba(255,255,255,.08);
+    --card-border: rgba(255,255,255,.16);
+    --text: #f2f4f8;
+    --text-dim: rgba(242,244,248,.62);
+    --accent: #7dd3fc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  body {
+    height: auto;
+    min-height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    background: linear-gradient(160deg, #0f2027, #203a43, #2c5364 60%, #0f2027);
+    background-size: 200% 200%;
+    animation: bgShift 18s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 0%; }
+    50%  { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+  }
+  /* 装饰性光斑，营造精致感 */
+  .glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow.a { width: 420px; height: 420px; top: -120px; left: -100px; background: #38bdf8; }
+  .glow.b { width: 380px; height: 380px; bottom: -140px; right: -80px; background: #a78bfa; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 460px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .clock {
+    font-size: clamp(48px, 12vw, 72px);
+    font-weight: 600;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 4px 24px rgba(56,189,248,.35);
+  }
+  .date {
+    margin-top: 6px;
+    font-size: 15px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .divider {
+    width: 44px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 32px 0 28px;
+    opacity: .8;
+  }
+
+  .nav {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .nav-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(10px);
+    text-decoration: none;
+    color: var(--text);
+    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+  }
+  .nav-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,.13);
+    border-color: rgba(255,255,255,.28);
+  }
+  .nav-card:active { transform: translateY(0px) scale(.99); }
+
+  .nav-icon {
+    width: 44px; height: 44px; flex: none;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .nav-icon.numberpuzzle { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .nav-icon.gomoku { background: linear-gradient(135deg, #1c1c1c, #4b4b4b); }
+  .nav-icon.coin { background: linear-gradient(135deg, #ffd700, #b8860b); }
+  .nav-icon.guess { background: linear-gradient(135deg, #e94560, #93335c); font-size: 17px; font-weight: 700; }
+  .nav-icon.game24 { background: linear-gradient(135deg, #22c55e, #0f766e); font-weight: 700; }
+  .nav-icon.solve24 { background: linear-gradient(135deg, #6366f1, #4338ca); font-size: 17px; font-weight: 700; }
+  .nav-icon.fillcup { background: linear-gradient(135deg, #4ecca3, #0f766e); font-weight: 700; }
+  .nav-icon.checkers { background: linear-gradient(135deg, #f472b6, #be185d); font-weight: 700; }
+  .nav-icon.bottles { background: linear-gradient(135deg, #38bdf8, #1d4ed8); font-weight: 700; }
+  .nav-icon.vs { background: linear-gradient(135deg, #4ade80, #7c3aed); font-size: 13px; font-weight: 700; }
+  .nav-icon.others { background: linear-gradient(135deg, #94a3b8, #475569); }
+
+  .nav-text { flex: 1; }
+  .nav-title { font-size: 16px; font-weight: 600; }
+  .nav-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+
+  .nav-arrow {
+    color: var(--text-dim);
+    font-size: 18px;
+    transition: transform .18s ease;
+  }
+  .nav-card:hover .nav-arrow { transform: translateX(3px); color: var(--accent); }
+
+  footer {
+    margin-top: 44px;
+    font-size: 12px;
+    color: rgba(242,244,248,.4);
+    letter-spacing: .5px;
+  }
+
+  @media (max-width: 380px) {
+    .clock { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+
+  <div class="wrap">
+    <div id="clock" class="clock">--:--:--</div>
+    <div id="date" class="date">----年--月--日 星期-</div>
+
+    <div class="divider"></div>
+
+    <nav class="nav">
+      <a class="nav-card" id="gomokuCard" href="gomoku/">
+        <div class="nav-icon gomoku">⚫</div>
+        <div class="nav-text">
+          <div class="nav-title">五子棋</div>
+          <div class="nav-sub">在线联机对战</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/coin/">
+        <div class="nav-icon coin">🪙</div>
+        <div class="nav-text">
+          <div class="nav-title">硬币之谜</div>
+          <div class="nav-sub">12 枚硬币 · 3 次称量找出异常</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/guess/">
+        <div class="nav-icon guess" aria-hidden="true">0–9</div>
+        <div class="nav-text">
+          <div class="nav-title">猜数字</div>
+          <div class="nav-sub">四位密码 · 根据 A/B 提示推理闯关</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/game24/">
+        <div class="nav-icon game24" aria-hidden="true">24</div>
+        <div class="nav-text">
+          <div class="nav-title">算24</div>
+          <div class="nav-sub">四个数字 · 加减乘除算出24</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/solve24/">
+        <div class="nav-icon solve24" aria-hidden="true">24?</div>
+        <div class="nav-text">
+          <div class="nav-title">求解24</div>
+          <div class="nav-sub">输入四个数字 · 查询24点解法</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/fillcup/">
+        <div class="nav-icon fillcup" aria-hidden="true">∪</div>
+        <div class="nav-text">
+          <div class="nav-title">装杯</div>
+          <div class="nav-sub">轮流倒水 · 谁装溢出谁输</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/checkers/">
+        <div class="nav-icon checkers" aria-hidden="true">✦</div>
+        <div class="nav-text">
+          <div class="nav-title">跳棋</div>
+          <div class="nav-sub">六角星棋盘 · 2/3/4/6 人同屏</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="games/bottles/">
+        <div class="nav-icon bottles" aria-hidden="true"><svg viewBox="0 0 58 100" width="20" height="20"><rect x="20" y="0" width="18" height="30" rx="4" fill="rgba(255,255,255,.75)"/><rect x="4" y="24" width="50" height="74" rx="16" fill="#fff"/></svg></div>
+        <div class="nav-text">
+          <div class="nav-title">猜瓶子</div>
+          <div class="nav-sub">移动瓶子 · 还原被遮住的顺序</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="vs/">
+        <div class="nav-icon vs" aria-hidden="true">VS</div>
+        <div class="nav-text">
+          <div class="nav-title">生物战争</div>
+          <div class="nav-sub">同屏双人 · 三路自动塔防对战</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="numberpuzzle/">
+        <div class="nav-icon numberpuzzle">🔢</div>
+        <div class="nav-text">
+          <div class="nav-title">数字迷城</div>
+          <div class="nav-sub">多款数字益智小游戏合集</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="others/">
+        <div class="nav-icon others">🎮</div>
+        <div class="nav-text">
+          <div class="nav-title">其他</div>
+          <div class="nav-sub">模拟器 · 迷宫 · 3D 演示等</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+    </nav>
+
+    <footer>jiao.oaij.art</footer>
+  </div>
+
+<script>
+  const clockEl = document.getElementById('clock');
+  const dateEl  = document.getElementById('date');
+  const WEEKDAYS = ['日','一','二','三','四','五','六'];
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick() {
+    const now = new Date();
+    clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    dateEl.textContent = `${now.getFullYear()}年${pad(now.getMonth() + 1)}月${pad(now.getDate())}日 星期${WEEKDAYS[now.getDay()]}`;
+  }
+
+  tick();
+  setInterval(tick, 1000);
+
+  if (window.SITE && window.SITE.online === false) {
+    const card = document.getElementById('gomokuCard');
+    card.href = 'gomoku/offline.html';
+    card.querySelector('.nav-sub').textContent = '本地对战';
+  }
+</script>
+</body>
+</html>

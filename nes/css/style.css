@@ -1,0 +1,622 @@
+/* =====================================================================
+   主题配色：通过 <html data-theme="..."> 切换，未设置时为 famicom
+   变量含义：
+     --page        页面背景
+     --shell       机身外框（最外层边框和外圈）
+     --shell-ring  机身外圈光晕
+     --panel       面板底色
+     --panel-hi    面板左上高光
+     --key         按键底色
+     --key-edge    按键边框
+     --key-ink     按键上的文字
+     --dpad-core   十字键中心凹陷
+     --accent      强调色（图标选中、按钮、标题）
+     --accent-ink  强调色上的文字
+     --line        线框、下拉框下划线
+     --text        面板内文字
+     --muted       次要文字
+     --warn / --warn-bg / --warn-ink  已修改的按键格
+   ===================================================================== */
+:root,
+:root[data-theme="famicom"] {
+  --page: #d9d4c7;
+  --shell: #b3202a;
+  --shell-ring: #8a8a8a;
+  --panel: #ece7da;
+  --panel-hi: #fbf8ef;
+  --key: #2a2a2a;
+  --key-edge: #101010;
+  --key-ink: #ece7da;
+  --dpad-core: #000;
+  --accent: #b3202a;
+  --accent-ink: #fbf8ef;
+  --line: #b3202a;
+  --text: #2a2a2a;
+  --muted: #6b6b6b;
+  --warn: #b3202a;
+  --warn-bg: #f6d9d9;
+  --warn-ink: #7e141c;
+}
+
+:root[data-theme="nes-gray"] {
+  --page: #c9c9c9;
+  --shell: #4a4a4a;
+  --shell-ring: #8e8e8e;
+  --panel: #cfcfcf;
+  --panel-hi: #ececec;
+  --key: #1f1f1f;
+  --key-edge: #0a0a0a;
+  --key-ink: #e0e0e0;
+  --dpad-core: #000;
+  --accent: #c0262d;
+  --accent-ink: #ffffff;
+  --line: #4a4a4a;
+  --text: #222;
+  --muted: #666;
+  --warn: #c0262d;
+  --warn-bg: #f1d3d4;
+  --warn-ink: #7a1217;
+}
+
+:root[data-theme="mono"] {
+  --page: #f1f1f1;
+  --shell: #0d0d0d;
+  --shell-ring: #5a5a5a;
+  --panel: #e6e6e6;
+  --panel-hi: #ffffff;
+  --key: #fafafa;
+  --key-edge: #1a1a1a;
+  --key-ink: #0d0d0d;
+  --dpad-core: #1a1a1a;
+  --accent: #0d0d0d;
+  --accent-ink: #ffffff;
+  --line: #0d0d0d;
+  --text: #0d0d0d;
+  --muted: #666;
+  --warn: #0d0d0d;
+  --warn-bg: #d4d4d4;
+  --warn-ink: #000;
+}
+
+:root[data-theme="night"] {
+  --page: #0c0c0c;
+  --shell: #1a1a1a;
+  --shell-ring: #333;
+  --panel: #262626;
+  --panel-hi: #333;
+  --key: #3a3a3a;
+  --key-edge: #121212;
+  --key-ink: #e8e8e8;
+  --dpad-core: #000;
+  --accent: #e0303a;
+  --accent-ink: #ffffff;
+  --line: #e0303a;
+  --text: #e8e8e8;
+  --muted: #9a9a9a;
+  --warn: #e0303a;
+  --warn-bg: #4a1c1f;
+  --warn-ink: #ffc9cc;
+}
+
+:root[data-theme="classic"] {
+  --page: #d0e7f9;
+  --shell: #0071a2;
+  --shell-ring: #999;
+  --panel: #f8f1d7;
+  --panel-hi: #fffef7;
+  --key: #e5e3dd;
+  --key-edge: #999;
+  --key-ink: #0071a2;
+  --dpad-core: #736a6d;
+  --accent: #0071a2;
+  --accent-ink: #f8f1d7;
+  --line: rgb(0, 147, 143);
+  --text: #0071a2;
+  --muted: #555;
+  --warn: #d9822b;
+  --warn-bg: #ffeccc;
+  --warn-ink: #a8530a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--page);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button { font-family: inherit; outline: 0; }
+
+.main {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  height: 100%;
+  max-width: 812px;
+  max-height: 414px;
+  margin: auto;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--shell);
+  box-shadow: 0 0 0 5px var(--shell), 0 0 0 20px var(--shell-ring);
+}
+
+.panel {
+  position: relative;
+  height: 100%;
+  padding: 20px;
+  border-radius: 15px;
+  background: var(--panel);
+  box-shadow: inset 8px 8px var(--panel-hi);
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 150px;
+  grid-template-areas: "dpad stage action";
+  gap: 0 12px;
+}
+
+.dpad-area { grid-area: dpad; display: flex; align-items: center; justify-content: center; }
+.action-area { grid-area: action; display: flex; align-items: center; justify-content: center; }
+.stage { grid-area: stage; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* ---------- 方向键 ---------- */
+.controller {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  touch-action: none;
+  filter: drop-shadow(5px 5px 0 rgba(255, 255, 255, .8));
+}
+
+.controller button {
+  position: absolute;
+  z-index: 1;
+  left: 50%; top: 50%;
+  width: 56px; height: 56px;
+  border: 8px solid var(--key-edge);
+  border-radius: 15px;
+  background: var(--key);
+  color: transparent;
+  transform: translate(-50%, -50%);
+}
+
+.controller::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  left: 50%; top: 50%;
+  width: 56px; height: 56px;
+  background: var(--key);
+  transform: translate(-50%, -50%);
+}
+
+.controller::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  left: 50%; top: 50%;
+  width: 42px; height: 42px;
+  border: 8px solid var(--key-edge);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 8px 0 0 var(--dpad-core), inset 0 -8px 0 0 rgba(255, 255, 255, .4);
+}
+
+.joydirection.up {
+  top: 0;
+  height: 50px;
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  transform: translate(-50%, 0);
+  box-shadow: inset 0 8px 0 0 rgba(255, 255, 255, .5);
+}
+
+.joydirection.right {
+  left: auto; right: 0;
+  width: 50px;
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  transform: translate(0, -50%);
+  box-shadow: inset 8px 0 0 0 var(--key), inset 6px 6px 0 0 rgba(255, 255, 255, .4), inset 8px -8px 0 0 rgba(0, 0, 0, .1);
+}
+
+.joydirection.down {
+  top: auto; bottom: 0;
+  height: 50px;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  transform: translate(-50%, 0);
+  box-shadow: inset 0 -8px 0 0 rgba(0, 0, 0, .1);
+}
+
+.joydirection.left {
+  left: 0;
+  width: 50px;
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  transform: translate(0, -50%);
+  box-shadow: inset 0 8px 0 0 rgba(255, 255, 255, .4), inset -8px 0 0 0 var(--key), inset -8px -8px 0 0 rgba(0, 0, 0, .1);
+}
+
+.controller button.active_btn { opacity: .7; }
+
+/* ---------- A / B ---------- */
+.action { display: flex; touch-action: none; }
+
+.action button {
+  width: 56px; height: 56px;
+  border: 8px solid var(--key-edge);
+  border-radius: 50%;
+  background: var(--key);
+  color: var(--key-ink);
+  box-shadow: 0 0 0 8px rgba(255, 255, 255, .6), inset 2px 5px 0 0 rgba(255, 255, 255, .2), inset -3px -6px 0 0 rgba(0, 0, 0, .1);
+  transition: all 100ms;
+  touch-action: none;
+}
+
+.action button:first-child { margin-right: 24px; }
+
+.action button.active_btn {
+  opacity: .9;
+  box-shadow: 0 0 0 15px rgba(255, 255, 255, .5), inset 2px 5px 0 0 rgba(255, 255, 255, .2), inset -2px -5px 0 0 rgba(0, 0, 0, .1);
+}
+
+/* ---------- 屏幕 ---------- */
+.screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: #000;
+  overflow: hidden;
+}
+
+.screen canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tip {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+.tip p { margin: 0; }
+.tip.hidden { display: none; }
+
+.toast {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+
+/* ---------- 工具栏 ---------- */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+#rom-select {
+  flex: 1 1 80px;
+  min-width: 0;
+  height: 28px;
+  padding-left: 3px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font-size: 12px;
+}
+#rom-select option, #rom-select optgroup { background: var(--panel); color: var(--text); }
+
+.icons { display: flex; gap: 6px; }
+
+.icon {
+  width: 30px; height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: none;
+  color: var(--line);
+}
+.icon svg {
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon.active-icon, .icon:active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.icon:not(.active-icon) .waves { display: none; }
+
+.function {
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  background: var(--accent);
+  box-shadow: 3px 3px 0 rgba(255, 255, 255, .8);
+}
+
+.function button {
+  height: 28px;
+  padding: 0 6px;
+  border: 5px solid var(--key-edge);
+  border-radius: 12px;
+  background: var(--key);
+  color: var(--key-ink);
+  font-size: 12px;
+  line-height: 1;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, .1), inset 3px 3px 0 0 rgba(255, 255, 255, .4);
+  touch-action: none;
+}
+.function button.active_btn { opacity: .7; }
+
+/* ---------- 弹出面板（按键设置） ---------- */
+.dialog {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, .45);
+}
+.dialog[hidden] { display: none; }
+
+.dialog-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  padding: 12px 16px;
+  border: 5px solid var(--shell);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.dialog-title {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.keys-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.keys-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px 3px;
+  text-align: center;
+}
+.keys-table thead th { font-weight: bold; }
+.keys-table tbody th { width: 22%; font-weight: normal; text-align: right; padding-right: 6px; }
+
+.key-cell {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  padding: 2px 4px;
+  border: 1px solid var(--key-edge);
+  border-radius: 6px;
+  background: var(--key);
+  color: var(--key-ink);
+  font-size: 12px;
+  line-height: 1.2;
+}
+.key-cell small { display: block; font-size: 10px; opacity: .75; }
+.key-cell.changed { border-color: var(--warn); background: var(--warn-bg); color: var(--warn-ink); }
+.key-cell.listening { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+
+.keys-shared {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.keys-shared .key-cell { width: 110px; }
+
+.keys-hint {
+  min-height: 30px;
+  margin: 6px 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.dialog-actions button {
+  height: 30px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: 15px;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+}
+.dialog-actions button.primary { background: var(--accent); color: var(--accent-ink); }
+
+@media screen and (max-height: 450px) {
+  .dialog-card { padding: 8px 14px; }
+  .dialog-title { margin-bottom: 2px; }
+  .keys-table { border-spacing: 4px 2px; }
+  .key-cell { min-height: 22px; padding: 1px 4px; }
+  .keys-shared { margin-top: 4px; }
+  .keys-hint { min-height: 0; margin: 4px 0; }
+}
+
+/* ---------- 竖屏 ---------- */
+@media screen and (orientation: portrait) {
+  .main {
+    max-width: 560px;
+    max-height: 100%;
+  }
+
+  .panel {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "stage stage" "dpad action";
+    gap: 16px 0;
+  }
+
+  .screen {
+    flex: none;
+    aspect-ratio: 256 / 240;
+  }
+
+  .dpad-area { justify-content: flex-start; padding-left: 6px; }
+  .action-area { justify-content: flex-end; padding-right: 14px; }
+}
+
+@media screen and (orientation: portrait) and (max-width: 600px) {
+  .main {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* ---------- 全屏：只显示游戏画面，黑底，等比放到最大 ---------- */
+html.is-fs,
+html.is-fs body { background: #000; }
+
+html.is-fs .main {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #000;
+}
+
+html.is-fs .panel {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #000;
+}
+
+html.is-fs .dpad-area,
+html.is-fs .action-area,
+html.is-fs .bar { display: none; }
+
+html.is-fs .stage { height: 100%; }
+
+html.is-fs .screen {
+  flex: 1;
+  margin: 0;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+html.is-fs .screen canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 整数倍：1X … NX，居中显示，像素边缘保持锐利 */
+html.is-fs.fs-int .screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html.is-fs.fs-int .screen canvas {
+  flex: none;
+  width: calc(256px * var(--fs-n));
+  height: calc(240px * var(--fs-n));
+  image-rendering: pixelated;
+}
+
+/* 全屏缩放选择条：无操作 2.5 秒后淡出，鼠标移动或触摸时再出现 */
+.fs-scale { display: none; }
+
+html.is-fs .fs-scale {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  z-index: 50;
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, .7);
+  transform: translateX(-50%);
+  transition: opacity .3s;
+}
+
+html.is-fs .fs-scale.idle { opacity: 0; pointer-events: none; }
+
+.fs-scale button {
+  min-width: 40px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, .4);
+  border-radius: 13px;
+  background: none;
+  color: #ddd;
+  font-size: 12px;
+}
+
+.fs-scale button.active {
+  border-color: #fff;
+  background: #fff;
+  color: #000;
+}

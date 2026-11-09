@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>其他游戏 · jiao.oaij.art</title>
+
+<link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+
+<style>
+  :root {
+    --card-bg: rgba(255,255,255,.08);
+    --card-border: rgba(255,255,255,.16);
+    --text: #f2f4f8;
+    --text-dim: rgba(242,244,248,.62);
+    --accent: #7dd3fc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+  body {
+    height: auto;
+    min-height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    background: linear-gradient(160deg, #0f2027, #203a43, #2c5364 60%, #0f2027);
+    background-size: 200% 200%;
+    animation: bgShift 18s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 0%; }
+    50%  { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+  }
+  /* 装饰性光斑，营造精致感 */
+  .glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow.a { width: 420px; height: 420px; top: -120px; left: -100px; background: #38bdf8; }
+  .glow.b { width: 380px; height: 380px; bottom: -140px; right: -80px; background: #a78bfa; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 460px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .back {
+    align-self: flex-start;
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color .18s ease;
+  }
+  .back:hover { color: var(--accent); }
+
+  .title {
+    font-size: clamp(28px, 7vw, 36px);
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-shadow: 0 4px 24px rgba(56,189,248,.35);
+  }
+  .subtitle {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .divider {
+    width: 44px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 26px 0 26px;
+    opacity: .8;
+  }
+
+  .nav {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .nav-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(10px);
+    text-decoration: none;
+    color: var(--text);
+    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+  }
+  .nav-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,.13);
+    border-color: rgba(255,255,255,.28);
+  }
+  .nav-card:active { transform: translateY(0px) scale(.99); }
+
+  .nav-icon {
+    width: 44px; height: 44px; flex: none;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .nav-icon.long { background: linear-gradient(135deg, #f97316, #dc2626); font-size: 15px; font-weight: 700; }
+  .nav-icon.submarine { background: linear-gradient(135deg, #0ea5e9, #1e3a8a); }
+  .nav-icon.maze { background: linear-gradient(135deg, #8b5cf6, #4c1d95); font-weight: 700; }
+  .nav-icon.unicycle { background: linear-gradient(135deg, #facc15, #ca8a04); font-size: 15px; font-weight: 700; }
+  .nav-icon.nes { background: linear-gradient(135deg, #ef4444, #7f1d1d); font-size: 13px; font-weight: 700; }
+  .nav-icon.arcade { background: linear-gradient(135deg, #2dd4bf, #0f766e); }
+  .nav-icon.alienshooter { background: linear-gradient(135deg, #22c55e, #166534); }
+
+  .nav-text { flex: 1; }
+  .nav-title { font-size: 16px; font-weight: 600; }
+  .nav-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+
+  .nav-arrow {
+    color: var(--text-dim);
+    font-size: 18px;
+    transition: transform .18s ease;
+  }
+  .nav-card:hover .nav-arrow { transform: translateX(3px); color: var(--accent); }
+
+  footer {
+    margin-top: 44px;
+    font-size: 12px;
+    color: rgba(242,244,248,.4);
+    letter-spacing: .5px;
+  }
+</style>
+</head>
+<body>
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+
+  <div class="wrap">
+    <a class="back" href="../index.html">‹ 返回首页</a>
+
+    <div class="title">其他游戏</div>
+    <div class="subtitle">一些好玩的小玩意</div>
+
+    <div class="divider"></div>
+
+    <nav class="nav">
+      <a class="nav-card" href="../with/long.html">
+        <div class="nav-icon long" aria-hidden="true">18s</div>
+        <div class="nav-text">
+          <div class="nav-title">是男人就坚持18秒</div>
+          <div class="nav-sub">躲避弹幕 · 挑战你的极限反应</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../with/submarine/">
+        <div class="nav-icon submarine">🛳️</div>
+        <div class="nav-text">
+          <div class="nav-title">潜水艇模拟器</div>
+          <div class="nav-sub">深海航行 · 物理模拟驾驶</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../with/maze/">
+        <div class="nav-icon maze" aria-hidden="true">▦</div>
+        <div class="nav-text">
+          <div class="nav-title">迷宫冒险</div>
+          <div class="nav-sub">随机生成迷宫 · 找到出口逃脱</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../with/unicycle-3d/">
+        <div class="nav-icon unicycle" aria-hidden="true">3D</div>
+        <div class="nav-text">
+          <div class="nav-title">独轮车的改造与演进</div>
+          <div class="nav-sub">3D 物理演示 · 见证独轮车进化</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../nes/">
+        <div class="nav-icon nes" aria-hidden="true">FC</div>
+        <div class="nav-text">
+          <div class="nav-title">FC 在线模拟器</div>
+          <div class="nav-sub">红白机经典 · 浏览器直接开玩</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../arcade/">
+        <div class="nav-icon arcade">🕹️</div>
+        <div class="nav-text">
+          <div class="nav-title">Arcade Player</div>
+          <div class="nav-sub">街机模拟器 · 怀旧游戏合集</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+
+      <a class="nav-card" href="../alienshooter/">
+        <div class="nav-icon alienshooter" aria-hidden="true">🔫</div>
+        <div class="nav-text">
+          <div class="nav-title">孤胆枪手 Demo</div>
+          <div class="nav-sub">俯视角清怪 · 武器升级 · 怪物蜂群</div>
+        </div>
+        <div class="nav-arrow">›</div>
+      </a>
+    </nav>
+
+    <footer>jiao.oaij.art</footer>
+  </div>
+</body>
+</html>

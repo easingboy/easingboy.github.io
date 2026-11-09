@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>跳棋</title>
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="../shared/style.css" />
+<style>
+  :root { --accent: #7dd3fc; --text: #fff; --text-dim: #a0a5b8; --secondary: #0f3460; }
+  body { background: linear-gradient(180deg, #16213e, #1a1a2e 65%, #0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; }
+  [hidden] { display: none !important; }
+  button, a { touch-action: manipulation; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  button:disabled { cursor: default; }
+  .game-shell { width: min(100%, 460px); margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 10px; padding: 0 0 14px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; background: var(--secondary); border: 0; }
+  .heading { text-align: center; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: 4px; color: var(--gold); }
+  .subtitle { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+  .home-intro { text-align: center; margin: 10px 0 20px; }
+  .home-intro h2 { margin: 0 0 8px; font-size: 34px; color: var(--gold); }
+  .home-intro p { margin: 0; font-size: 14px; color: var(--text-dim); }
+  .option-group { border: 0; padding: 0; margin: 0 0 18px; min-width: 0; }
+  .option-group legend { width: 100%; padding: 0 0 10px; font-size: 12px; color: var(--text-dim); text-align: center; }
+  .choices { display: flex; justify-content: center; gap: 8px; }
+  .choice { flex: 1; max-width: 72px; min-height: 44px; padding: 8px 2px; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--text-dim); font-size: 14px; }
+  .choice[aria-pressed="true"] { color: #08243b; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .choice:hover, .action:hover:not(:disabled) { filter: brightness(1.15); }
+  .choice:active, .action:active:not(:disabled) { transform: scale(.96); }
+  .dialog-footer { display: flex; justify-content: center; margin-top: 20px; }
+  .btn { min-height: 46px; min-width: 140px; border-radius: 23px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #08243b; font-weight: 600; }
+  .rules-card { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); font-size: 12px; line-height: 1.9; color: var(--text-dim); }
+  .rules-card h3 { margin: 0 0 6px; font-size: 13px; color: var(--gold); }
+  .rules-card p { margin: 0; }
+  .status-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; font-size: 12px; color: var(--text-dim); }
+  .turn-text { min-height: 44px; display: flex; align-items: center; justify-content: center; margin: 8px 0; font-size: 15px; font-weight: 600; text-align: center; line-height: 1.6; }
+  .board-wrap { position: relative; margin: 0 auto; padding: 10px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+  canvas { display: block; width: 100%; height: auto; border-radius: 10px; touch-action: manipulation; }
+  .players { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+  .player-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); font-size: 12px; color: var(--text-dim); }
+  .player-chip .swatch { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 -2px 3px rgba(0,0,0,.35); }
+  .player-chip.active { color: #fff; border-color: currentColor; background: rgba(125,211,252,.12); }
+  .player-chip b { font-variant-numeric: tabular-nums; }
+  .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .action { min-height: 44px; padding: 0 4px; border: 1px solid transparent; border-radius: 22px; background: var(--secondary); color: #fff; font-size: 13px; }
+  .action:disabled { opacity: .4; }
+  .board-note { margin: 16px 0 0; font-size: 12px; line-height: 1.8; color: var(--text-dim); text-align: center; }
+  dialog { width: min(400px, calc(100% - 32px)); padding: 24px; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; background: #16213e; color: #fff; }
+  dialog::backdrop { background: rgba(0,0,0,.84); }
+  dialog h2 { margin: 0 0 14px; font-size: 24px; color: var(--gold); }
+  dialog p { margin: 0; font-size: 14px; line-height: 1.8; color: #b7bdcc; }
+  #resultDialog { text-align: center; }
+  @media (max-width: 360px) { .game-shell { padding-left: 12px; padding-right: 12px; } .choices { gap: 6px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="game-header">
+    <a id="backLink" class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+    <div class="heading"><h1>跳棋</h1><p id="modeText" class="subtitle">中国跳棋 · 同屏多人</p></div>
+    <button id="helpBtn" class="help-btn" aria-label="游戏规则">?</button>
+  </header>
+  <section id="homeScreen" aria-label="跳棋人数选择">
+    <div class="home-intro"><h2>跳 棋</h2><p>六角星棋盘 · 轮流走子与跳跃</p></div>
+    <fieldset class="option-group"><legend>上场人数</legend><div id="playerOptions" class="choices"></div></fieldset>
+    <div class="dialog-footer"><button id="startBtn" class="btn primary">开始对局</button></div>
+    <section class="rules-card"><h3>游戏规则</h3><p>每人把自己的 10 颗棋子全部走进<b>正对面</b>的角区，最先填满者获胜。每回合选一颗己方棋子，走到相邻空位，或做一次<b>等距跳</b>：沿一条直线方向隔任意数量空位跳过<b>唯一一颗棋子</b>（不分敌我），只要棋子另一侧有相同数量的空位即可落地。跳跃可以<b>连续进行</b>。棋子不会被吃掉。2 人使用上下对角，3 人均分三角，4 人占据左右与上下，6 人满盘开局。</p></section>
+  </section>
+  <section id="playScreen" hidden aria-label="跳棋对局">
+    <div class="status-bar"><span id="seatText"></span><span id="roundText"></span></div>
+    <p id="turnText" class="turn-text" role="status"></p>
+    <div class="board-wrap"><canvas id="board" aria-label="跳棋棋盘"></canvas></div>
+    <div id="players" class="players"></div>
+    <div class="actions"><button id="undoBtn" class="action">悔棋</button><button id="restartBtn" class="action">重新开始</button><button id="menuBtn" class="action">返回人数选择</button></div>
+    <p class="board-note">点击己方棋子查看落点，再点亮点即可走子<br>已落位的棋子不再移出目标角区</p>
+  </section>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">跳棋 · 规则与操作</h2>
+  <p>目标：把自己 10 颗棋子全部送进正对面的角区，最先填满的人获胜。</p>
+  <p>走法：每回合移动一颗己方棋子。可以走到相邻的空洞位；也可以做一次<b>等距跳</b>：沿六个方向之一，隔任意数量（可以是0个，即紧邻）连续空位后跳过<b>唯一一颗棋子</b>（不分敌我），只要棋子另一侧有相同数量的连续空位并落在空洞位上，就可以跳过去，像跷跷板一样两侧对称。跳跃可连续进行，每一段都要重新满足上述条件，落点由你选择，可随时停下。</p>
+  <p>限制：棋子不会被吃掉，也不能跳出棋盘。已经进入目标角区的棋子仍可移动，但不会离开目标区，所以填满后即达成胜利。3 人与 4 人局中正对面没有对手时，目标区就是该空角。</p>
+  <p>操作：点击己方棋子查看所有可落点，再点亮点走子；点空白处或重新点其他棋子可切换选择。点击“悔棋”可撤回最近一步（连点可连续悔多步，直至回到开局），终局后也能悔棋继续对局。2/3/4/6 人同屏轮流操作，没有倒计时，不保存对局进度。</p>
+  <div class="dialog-footer"><button id="closeRulesBtn" class="btn primary">知道了</button></div>
+</dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle">
+  <h2 id="resultTitle"></h2><p id="resultDetails"></p>
+  <div class="dialog-footer"><button id="resultRestartBtn" class="btn primary">再来一局</button><button id="resultMenuBtn" class="btn">返回人数选择</button></div>
+</dialog>
+<script id="checkers-engine">
+const BOARD_RADIUS = 4;
+const TRIANGLE = 10;
+const DIRECTIONS = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+// 六个尖角三角形的尖端：必须对齐中央六边形“各边中点”的外延方向（而不是六边形顶点方向），
+// 否则三角形会向一侧歪斜、贴不齐六边形。取相邻两个顶点的中点再乘 2 得到尖端坐标。
+const HEX_VERTICES = [[4,0],[4,-4],[0,-4],[-4,0],[-4,4],[0,4]];
+const CORNERS = HEX_VERTICES.map(([q,r], i) => {
+  const [nq,nr] = HEX_VERTICES[(i+1)%6];
+  return [q+nq, r+nr]; // = 2 * 边中点
+});
+const SEATS_BY_PLAYERS = { 2:[0,3], 3:[0,2,4], 4:[0,2,3,5], 6:[0,1,2,3,4,5] };
+const axialKey = (q,r) => `${q},${r}`;
+const hexDistance = ([q1,r1],[q2,r2]) => Math.max(Math.abs(q1-q2), Math.abs(r1-r2), Math.abs(q1+r1-q2-r2));
+const HEX_ONLY_HOLES = (() => {
+  const holes = new Set();
+  for (let q=-BOARD_RADIUS; q<=BOARD_RADIUS; q++) for (let r=-BOARD_RADIUS; r<=BOARD_RADIUS; r++) {
+    if (hexDistance([q,r],[0,0]) <= BOARD_RADIUS) holes.add(axialKey(q,r));
+  }
+  return holes;
+})();
+function cartPoint(q, r) { return { x: q + r / 2, y: r * Math.sqrt(3) / 2 }; }
+function buildTriangleRows(corner, other, lat) {
+  const [cq, cr] = corner, rows = [];
+  for (let k = 0; k < BOARD_RADIUS; k++) {
+    const row = [];
+    for (let j = 0; j <= k; j++) row.push([cq + other[0]*k + lat[0]*j, cr + other[1]*k + lat[1]*j]);
+    rows.push(row);
+  }
+  return rows;
+}
+/** 三角形须以尖端为轴左右对称：各行几何中心与尖端共线，且每行本身垂直于该轴线 */
+function isSymmetricTriangle(corner, rows) {
+  const tip = cartPoint(...corner);
+  const centers = rows.map(row => {
+    const pts = row.map(([q,r]) => cartPoint(q,r));
+    return { x: pts.reduce((s,p)=>s+p.x,0)/pts.length, y: pts.reduce((s,p)=>s+p.y,0)/pts.length };
+  });
+  const axis = { x: centers[1].x - tip.x, y: centers[1].y - tip.y };
+  const axisLen = Math.hypot(axis.x, axis.y);
+  if (axisLen < 1e-9) return false;
+  for (let i = 2; i < centers.length; i++) {
+    if (Math.abs(axis.x*(centers[i].y-tip.y) - axis.y*(centers[i].x-tip.x)) > 1e-6) return false;
+  }
+  for (let ri = 0; ri < rows.length; ri++) {
+    for (const [q,r] of rows[ri]) {
+      const p = cartPoint(q,r);
+      const proj = ((p.x-centers[ri].x)*axis.x + (p.y-centers[ri].y)*axis.y) / axisLen;
+      if (Math.abs(proj) > 1e-6) return false;
+    }
+  }
+  return true;
+}
+/** 贴中央六边形一行与六边形边界的相邻计数，用于挑选真正贴合（不悬空）的展开方向 */
+function hexAdjacencyCount(rows) {
+  let count = 0;
+  for (const row of rows) for (const [q,r] of row) for (const [dq,dr] of DIRECTIONS) {
+    if (HEX_ONLY_HOLES.has(axialKey(q+dq, r+dr))) count++;
+  }
+  return count;
+}
+/**
+ * 六个方向两两组合只有30种，为每个角点求解一组同时满足“左右对称”与“贴六边形边界”的展开方向。
+ * 仅在模块加载时计算一次并缓存，避免使用单一公式在不同角点上出现镜像/歪斜错误。
+ */
+const TRIANGLE_DIRS = CORNERS.map(corner => {
+  let best = null;
+  for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) {
+    if (a === b) continue;
+    const rows = buildTriangleRows(corner, DIRECTIONS[a], DIRECTIONS[b]);
+    if (!isSymmetricTriangle(corner, rows)) continue;
+    const adj = hexAdjacencyCount(rows);
+    if (!best || adj > best.adj) best = { other: DIRECTIONS[a], lat: DIRECTIONS[b], adj };
+  }
+  return best;
+});
+function triangleHoles(corner) {
+  const index = CORNERS.findIndex(([q,r]) => q === corner[0] && r === corner[1]);
+  const { other, lat } = TRIANGLE_DIRS[index];
+  const [cq,cr] = corner, holes = [];
+  for (let k=0; k<BOARD_RADIUS; k++) {
+    for (let j=0; j<=k; j++) holes.push([cq + other[0]*k + lat[0]*j, cr + other[1]*k + lat[1]*j]);
+  }
+  return holes;
+}
+/** 中央六边形（半径4，61格）与六个尖角三角形（各10格）组成121格六角星 */
+const BOARD_HOLES = (() => {
+  const holes = new Set(HEX_ONLY_HOLES);
+  for (const corner of CORNERS) for (const [q,r] of triangleHoles(corner)) holes.add(axialKey(q,r));
+  return holes;
+})();
+
+class CheckersGame {
+  constructor({ players = 6 } = {}) {
+    if (!SEATS_BY_PLAYERS[players]) throw new RangeError('人数仅支持2、3、4、6人');
+    this.players = players;
+    this.holes = BOARD_HOLES;
+    this.seats = SEATS_BY_PLAYERS[players].slice();
+    this.reset();
+  }
+  reset() {
+    this.pegs = this.seats.map(seat => new Set(this.homeHoles(CORNERS[seat]).map(([q,r]) => axialKey(q,r))));
+    this.current = 0;
+    this.winner = null;
+    this.finished = false;
+    this.round = 1;
+    this.selected = null;
+    this.history = [];
+    return this;
+  }
+  snapshot() {
+    return {
+      pegs: this.pegs.map(set => new Set(set)),
+      current: this.current,
+      winner: this.winner,
+      finished: this.finished,
+      round: this.round
+    };
+  }
+  holesKeyed() { return Array.from(BOARD_HOLES); }
+  homeHoles(corner) { return triangleHoles(corner, Math.sign(corner[1]) || (corner[0] > 0 ? -1 : 1)); }
+  targetHoles(player) { return this.homeHoles(CORNERS[(this.seats[player]+3)%6]); }
+  seatsFor(count) { return SEATS_BY_PLAYERS[count].slice(); }
+  occupancy() {
+    const map = new Map();
+    this.pegs.forEach((pegSet, player) => { for (const peg of pegSet) map.set(peg, player); });
+    return map;
+  }
+  pegAt(q,r) { const owner = this.occupancy().get(axialKey(q,r)); return owner === undefined ? null : owner; }
+  legalMovesFrom([q,r]) {
+    const start = axialKey(q,r);
+    if (!BOARD_HOLES.has(start) || !this.pegs[this.current].has(start)) return [];
+    const owner = this.occupancy();
+    // 连跳是同一枚棋子在虚拟路径上的连续跳跃：一旦离开出发格，该格在本回合余下的
+    // 所有跳跃判定中都必须视为空位，否则后续某一跳可能会绕回来，把这个早已空出的
+    // 出发格误当成"还有一枚棋子"而跨越过去，产生不存在的跳跃路径。
+    owner.delete(start);
+    const moves = [];
+    const seen = new Set([start]);
+    for (const [dq,dr] of DIRECTIONS) {
+      const nq = q+dq, nr = r+dr, nKey = axialKey(nq,nr);
+      if (!BOARD_HOLES.has(nKey) || owner.has(nKey)) continue;
+      moves.push({ to:[nq,nr], path:[[q,r],[nq,nr]] });
+    }
+    // “等距跳”：沿某方向先经过 N（N>=0）个连续空位，遇到该方向上第一枚棋子（不分敌我）后，
+    // 若棋子另一侧同样有 N 个连续空位、落点在棋盘内且为空，则可以跳到落点（N=0 时即传统的“相邻跳”）。
+    const findJumpLanding = (cq, cr, dq, dr) => {
+      let steps = 0, pq = cq, pr = cr;
+      while (true) {
+        pq += dq; pr += dr; steps++;
+        const key = axialKey(pq, pr);
+        if (!BOARD_HOLES.has(key)) return null; // 出界前未遇到棋子，此方向无法跳
+        if (owner.has(key)) break; // 找到该方向上最近的唯一一枚棋子
+      }
+      let lq = pq, lr = pr;
+      for (let i = 0; i < steps; i++) {
+        lq += dq; lr += dr;
+        const key = axialKey(lq, lr);
+        if (!BOARD_HOLES.has(key) || owner.has(key)) return null; // 对侧空位数量不对称，或落点被占/出界
+      }
+      return [lq, lr];
+    };
+    const walk = (cq,cr,path,visited) => {
+      for (const [dq,dr] of DIRECTIONS) {
+        const landing = findJumpLanding(cq,cr,dq,dr);
+        if (!landing) continue;
+        const landingKey = axialKey(...landing);
+        if (visited.has(landingKey)) continue;
+        const nextPath = path.concat([landing]);
+        moves.push({ to:landing, path:nextPath });
+        const nextVisited = new Set(visited); nextVisited.add(landingKey);
+        walk(landing[0],landing[1],nextPath,nextVisited);
+      }
+    };
+    walk(q,r,[[q,r]],seen);
+    return moves;
+  }
+  progressesTo(from,to) {
+    const [fq,fr] = from, [tq,tr] = to;
+    const target = this.targetHoles(this.current);
+    const fromInside = target.some(([q,r]) => q===fq && r===fr);
+    const toInside = target.some(([q,r]) => q===tq && r===tr);
+    return !fromInside && toInside;
+  }
+  move(from,to) {
+    if (this.finished) return false;
+    const fromKey = axialKey(...from), toKey = axialKey(...to);
+    const legal = this.legalMovesFrom(from).find(move => axialKey(...move.to) === toKey);
+    if (!legal) return false;
+    this.history.push(this.snapshot());
+    this.pegs[this.current].delete(fromKey);
+    this.pegs[this.current].add(toKey);
+    const target = this.targetHoles(this.current).map(([q,r]) => axialKey(q,r));
+    if (this.pegs[this.current].size === target.length && target.every(hole => this.pegs[this.current].has(hole))) {
+      this.winner = this.current; this.finished = true;
+    } else {
+      this.current = (this.current+1) % this.players;
+      if (this.current === 0) this.round++;
+    }
+    this.selected = null;
+    return true;
+  }
+  canUndo() { return this.history.length > 0; }
+  /** 悔棋：撤回最近一步（含吃到终局的最后一步），可连续悔多步直至回到开局 */
+  undo() {
+    if (!this.history.length) return false;
+    const prev = this.history.pop();
+    this.pegs = prev.pegs;
+    this.current = prev.current;
+    this.winner = prev.winner;
+    this.finished = prev.finished;
+    this.round = prev.round;
+    this.selected = null;
+    return true;
+  }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SEAT_NAMES = ['上方','右上','右下','下方','左下','左上'];
+  const COLORS = ['#e94560','#5b9bd5','#22c55e','#f0a500','#a78bfa','#22d3ee'];
+  const canvas = $('board'), ctx = canvas.getContext('2d');
+  let game = null, selected = null, legalMoves = [], size = 0, cell = 0, dpr = 1, originX = 0, originY = 0;
+  // 走子动画：animState 非空时表示正在沿 path 逐段跳跃演示，期间棋盘不接受新的点击
+  let animState = null, frameId = 0, animGeneration = 0;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const HOP_MS = 260;
+  const easeInOutQuad = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+  function cancelAnimation() {
+    animGeneration++;
+    cancelAnimationFrame(frameId);
+    frameId = 0;
+    animState = null;
+  }
+
+  // 六边形坐标(q,r)的两条轴夹角为60°，需按 x = q + r/2, y = r*√3/2 映射到屏幕
+  function pointFor(q,r) { return { x: originX + (q + r/2)*cell, y: originY + (r*Math.sqrt(3)/2)*cell }; }
+  /** 屏幕坐标反解为最近的洞位，命中判定使用真实像素距离 */
+  function pixelToAxial(x,y) {
+    let best = null, bestDistance = Infinity;
+    for (const hole of BOARD_HOLES) {
+      const [hq,hr] = hole.split(',').map(Number);
+      const point = pointFor(hq,hr);
+      const distance = Math.hypot(point.x - x, point.y - y);
+      if (distance < bestDistance) { bestDistance = distance; best = [hq,hr]; }
+    }
+    return bestDistance <= cell*0.62 ? best : null;
+  }
+  /** 洞位在“单位格距”下的坐标，不依赖当前原点，避免反复缩放时误差累积 */
+  function unitPoint(q,r) { return { x: q + r/2, y: r*Math.sqrt(3)/2 }; }
+  /** 单位格距下的包围盒（宽高与中心偏移） */
+  function unitExtent() {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const hole of BOARD_HOLES) {
+      const [q,r] = hole.split(',').map(Number);
+      const { x, y } = unitPoint(q,r);
+      minX = Math.min(minX,x); maxX = Math.max(maxX,x);
+      minY = Math.min(minY,y); maxY = Math.max(maxY,y);
+    }
+    return { width: maxX-minX, height: maxY-minY, cx: (minX+maxX)/2, cy: (minY+maxY)/2 };
+  }
+  function fitSize() {
+    dpr = window.devicePixelRatio || 1;
+    const extent = unitExtent();
+    const available = Math.min(window.innerWidth - 56, window.innerHeight * 0.62);
+    const target = Math.max(260, Math.min(400, Math.floor(available)));
+    // 先按可用宽度决定格距，再受高度约束，最后按较大者铺满可用宽度
+    cell = target/(extent.width + 1.6);
+    cell = Math.min(cell, (window.innerHeight*0.62)/(extent.height + 1.6));
+    const width = (extent.width + 1.6)*cell, height = (extent.height + 1.6)*cell;
+    size = Math.max(width, height);
+    canvas.style.width = Math.round(width) + 'px';
+    canvas.style.height = Math.round(height) + 'px';
+    canvas.width = Math.round(width*dpr);
+    canvas.height = Math.round(height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    originX = width/2 - extent.cx*cell;
+    originY = height/2 - extent.cy*cell;
+    draw();
+  }
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (!game) return;
+    // 中央六边形孔位：浅色圆点，提高与深色背景的对比度以显现六角星轮廓
+    const centerSeats = new Set(game.seats);
+    for (const hole of BOARD_HOLES) {
+      const [q,r] = hole.split(',').map(Number);
+      const { x, y } = pointFor(q,r);
+      ctx.beginPath(); ctx.arc(x,y,cell*.36,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(210,220,240,.22)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(210,220,240,.38)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // 六个尖角阵营：仅上场阵营着色，未上场保持中性色
+    for (let seat = 0; seat < 6; seat++) {
+      const player = game.seats.indexOf(seat);
+      for (const [q,r] of triangleHoles(CORNERS[seat])) {
+        const { x, y } = pointFor(q,r);
+        ctx.beginPath(); ctx.arc(x,y,cell*.36,0,Math.PI*2);
+        if (player < 0) { ctx.fillStyle = 'rgba(210,220,240,.16)'; ctx.strokeStyle = 'rgba(210,220,240,.3)'; }
+        else {
+          const isTarget = game.targetHoles(player).some(([tq,tr]) => tq===q && tr===r);
+          ctx.fillStyle = hexAlpha(COLORS[player], isTarget ? .32 : .22);
+          ctx.strokeStyle = hexAlpha(COLORS[player], .6);
+        }
+        ctx.fill(); ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+    if (selected) {
+      for (const move of legalMoves) {
+        const { x, y } = pointFor(...move.to);
+        ctx.beginPath(); ctx.arc(x,y,cell*.17,0,Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fill();
+      }
+      const from = pointFor(...selected);
+      ctx.beginPath(); ctx.arc(from.x,from.y,cell*.42,0,Math.PI*2);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // 动画进行时，正在飞行的这颗棋子暂不按“静止棋子”绘制，改由下方动画逻辑单独画出
+    const flyingKey = animState ? axialKey(...animState.path[0]) : null;
+    game.pegs.forEach((pegSet, player) => {
+      for (const peg of pegSet) {
+        if (animState && player === animState.player && peg === flyingKey) continue;
+        const [q,r] = peg.split(',').map(Number);
+        const { x, y } = pointFor(q,r);
+        drawPegAt(x, y, player);
+      }
+    });
+    if (animState) drawAnimatedMove();
+  }
+  function drawPegAt(x, y, player) {
+    const radius = cell*.34;
+    const gradient = ctx.createRadialGradient(x-radius*.35, y-radius*.35, radius*.1, x, y, radius);
+    gradient.addColorStop(0, '#fff'); gradient.addColorStop(.25, COLORS[player]); gradient.addColorStop(1, shade(COLORS[player]));
+    ctx.beginPath(); ctx.arc(x,y,radius,0,Math.PI*2);
+    ctx.fillStyle = gradient; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  /** 画出本次走子的完整路线（虚线+落点标记），并把当前正在跳跃的这一段棋子画在插值位置上，
+   * 让玩家能清楚看到每一步具体跨越到了哪个洞位——便于第一时间发现“跳跃步骤算错”这类问题。 */
+  function drawAnimatedMove() {
+    const { path, segment, t, player } = animState;
+    ctx.save();
+    ctx.setLineDash([cell*.12, cell*.1]);
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    path.forEach((pt,i) => { const { x, y } = pointFor(...pt); i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); });
+    ctx.stroke();
+    ctx.restore();
+    for (let i = 1; i < path.length; i++) {
+      const { x, y } = pointFor(...path[i]);
+      ctx.beginPath(); ctx.arc(x,y,cell*(i===segment+1 ? .16 : .12),0,Math.PI*2);
+      if (i <= segment) { ctx.fillStyle = hexAlpha(COLORS[player], .8); ctx.fill(); }
+      else { ctx.strokeStyle = i===segment+1 ? '#fff' : 'rgba(255,255,255,.6)'; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    const from = pointFor(...path[segment]), to = pointFor(...path[segment+1]);
+    const isJump = hexDistance(path[segment], path[segment+1]) > 1;
+    const x = from.x + (to.x-from.x)*t;
+    const y = from.y + (to.y-from.y)*t - (isJump ? Math.sin(Math.PI*t)*cell*.32 : 0);
+    drawPegAt(x, y, player);
+  }
+  function hexAlpha(hex, alpha) {
+    const value = parseInt(hex.slice(1), 16);
+    return `rgba(${value>>16&255},${value>>8&255},${value&255},${alpha})`;
+  }
+  function shade(hex) {
+    const value = parseInt(hex.slice(1), 16);
+    return `rgb(${Math.round((value>>16&255)*.6)},${Math.round((value>>8&255)*.6)},${Math.round((value&255)*.6)})`;
+  }
+  function renderHome() {
+    document.querySelectorAll('[data-players]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.players) === playerCount)));
+  }
+  function renderPlayers() {
+    const wrap = $('players'); wrap.replaceChildren();
+    game.seats.forEach((seat, player) => {
+      const chip = document.createElement('span');
+      chip.className = 'player-chip' + (player === game.current && !game.finished ? ' active' : '');
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch'; swatch.style.background = COLORS[player];
+      const label = document.createElement('span');
+      const target = game.targetHoles(player).map(([q,r]) => axialKey(q,r));
+      const done = target.filter(hole => game.pegs[player].has(hole)).length;
+      label.innerHTML = `玩家${player+1}（${SEAT_NAMES[seat]}）<b>${done}/${target.length}</b>`;
+      chip.append(swatch, label); wrap.appendChild(chip);
+    });
+  }
+  function render() {
+    const playing = !!game;
+    $('homeScreen').hidden = playing; $('playScreen').hidden = !playing;
+    $('backLink').setAttribute('aria-label', playing ? '返回人数选择' : '返回网站首页');
+    if (!playing) { renderHome(); return; }
+    $('modeText').textContent = `${game.players}人同屏 · 中国跳棋`;
+    $('seatText').textContent = `轮到玩家${game.current+1}`;
+    $('roundText').textContent = `第 ${game.round} 轮`;
+    if (game.finished) $('turnText').textContent = `玩家${game.winner+1} 获胜！`;
+    else if (animState) $('turnText').textContent = '棋子跳跃中…';
+    else if (selected) $('turnText').textContent = legalMoves.length ? '点击亮点完成走子' : '这颗棋子暂时无处可走';
+    else $('turnText').textContent = `点击玩家${game.current+1}的棋子（${COLORS[game.current] === '#e94560' ? '红' : COLORS[game.current] === '#5b9bd5' ? '蓝' : COLORS[game.current] === '#22c55e' ? '绿' : '橙'}色）`;
+    $('undoBtn').disabled = !game.canUndo() || !!animState;
+    renderPlayers(); draw();
+  }
+  function start() { cancelAnimation(); game = new CheckersGame({ players: playerCount }); selected = null; legalMoves = []; render(); }
+  function backToHome() {
+    cancelAnimation();
+    game = null; selected = null; legalMoves = [];
+    document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+    render();
+  }
+  function finish() {
+    $('resultTitle').textContent = `玩家${game.winner+1} 获胜！`;
+    $('resultDetails').textContent = `玩家${game.winner+1}（${SEAT_NAMES[game.seats[game.winner]]}）已把 10 颗棋子全部送进正对角区，共 ${game.round} 轮。`;
+    if (!$('resultDialog').open) $('resultDialog').showModal();
+  }
+  /** 沿 move.path 逐段播放跳跃/走子动画，动画结束后才真正提交 game.move()。
+   * 期间棋子在棋盘上的真实状态不变，只是把该棋子的“视觉位置”按插值单独画出。 */
+  function animateMove(from, move) {
+    const player = game.current, path = move.path;
+    const token = ++animGeneration;
+    selected = null; legalMoves = [];
+    animState = { path, player, segment: 0, t: 0 };
+    render();
+    const totalSegments = path.length - 1;
+    function playSegment(segIndex) {
+      if (token !== animGeneration) return;
+      if (segIndex >= totalSegments) {
+        animState = null;
+        const ok = game.move(from, move.to);
+        render();
+        if (ok && game.finished) finish();
+        return;
+      }
+      const duration = reducedMotion.matches ? 1 : HOP_MS;
+      const started = performance.now();
+      function tick(now) {
+        if (token !== animGeneration) return;
+        const t = Math.min(1, (now-started)/duration);
+        animState = { path, player, segment: segIndex, t: easeInOutQuad(t) };
+        draw();
+        if (t < 1) { frameId = requestAnimationFrame(tick); return; }
+        playSegment(segIndex+1);
+      }
+      frameId = requestAnimationFrame(tick);
+    }
+    playSegment(0);
+  }
+  canvas.addEventListener('click', event => {
+    if (!game || game.finished || animState) return;
+    const rect = canvas.getBoundingClientRect();
+    // pointFor 产出的是 CSS 像素坐标，直接用 CSS 像素命中，不要再按 size 缩放
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const hole = pixelToAxial(x,y);
+    if (!hole) { selected = null; legalMoves = []; render(); return; }
+    const key = axialKey(...hole);
+    if (game.pegs[game.current].has(key)) { selected = hole; legalMoves = game.legalMovesFrom(hole); render(); return; }
+    if (selected) {
+      const move = legalMoves.find(item => axialKey(...item.to) === key);
+      if (move) { animateMove(selected, move); return; }
+    }
+    selected = null; legalMoves = []; render();
+  });
+  let playerCount = 6;
+  for (const count of [2,3,4,6]) {
+    const button = document.createElement('button');
+    button.className = 'choice'; button.dataset.players = count; button.textContent = `${count} 人`;
+    button.addEventListener('click', () => { playerCount = count; renderHome(); });
+    $('playerOptions').appendChild(button);
+  }
+  $('startBtn').addEventListener('click', start);
+  $('undoBtn').addEventListener('click', () => {
+    if (!game || !game.canUndo() || animState) return;
+    if ($('resultDialog').open) $('resultDialog').close();
+    game.undo();
+    selected = null; legalMoves = [];
+    render();
+  });
+  $('restartBtn').addEventListener('click', () => { if (game) { cancelAnimation(); document.querySelectorAll('dialog[open]').forEach(d => d.close()); game.reset(); selected = null; legalMoves = []; render(); } });
+  $('menuBtn').addEventListener('click', backToHome);
+  $('resultRestartBtn').addEventListener('click', () => { cancelAnimation(); $('resultDialog').close(); game.reset(); selected = null; legalMoves = []; render(); });
+  $('resultMenuBtn').addEventListener('click', backToHome);
+  $('helpBtn').addEventListener('click', () => { if (!$('rulesDialog').open) $('rulesDialog').showModal(); });
+  $('closeRulesBtn').addEventListener('click', () => $('rulesDialog').close());
+  $('backLink').addEventListener('click', event => { if (game) { event.preventDefault(); backToHome(); } });
+  window.addEventListener('resize', fitSize);
+  window.checkersTest = {
+    pointFor,
+    getGame: () => game,
+    select(hole) { selected = hole; legalMoves = game.legalMovesFrom(hole); render(); },
+    snapshot: () => ({
+      current: game.current,
+      pegCounts: game.pegs.map(set => set.size),
+      occupied: Array.from(game.occupancy().keys()),
+      legal: legalMoves.map(move => ({ to: move.to, path: move.path })),
+      finished: game.finished,
+      winner: game.winner,
+      canUndo: game.canUndo(),
+      animating: !!animState
+    })
+  };
+  renderHome(); fitSize();
+})();
+</script>
+</body>
+</html>

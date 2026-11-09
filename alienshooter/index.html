@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>孤胆枪手 - Demo</title>
+<link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+<style>
+  :root {
+    --bg: #0f0f1a; --panel: #16213e; --panel2: #1a1a2e;
+    --accent: #7dd3fc; --gold: #ffd700; --text: #f2f4f8; --text-dim: rgba(242,244,248,.62);
+    --danger: #ef4444; --ok: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--text); }
+  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+  canvas#game { background: #11131a; display: block; touch-action: none; cursor: crosshair; }
+
+  .back-link {
+    position: fixed; top: 12px; left: 12px; z-index: 50;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 7px 12px; border-radius: 10px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+    color: var(--text-dim); font-size: 13px; text-decoration: none;
+  }
+  .back-link:active { background: rgba(255,255,255,.16); }
+
+  .mute-btn {
+    position: fixed; top: 12px; right: 12px; z-index: 50;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+    color: var(--text-dim); font-size: 16px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .mute-btn:active { background: rgba(255,255,255,.16); }
+
+  /* HUD */
+  #hud { position: fixed; top: 0; left: 0; right: 0; z-index: 30; padding: 14px 16px; pointer-events: none;
+    display: flex; flex-direction: column; gap: 8px; }
+  #hud[hidden] { display: none; }
+  .hud-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .hp-bar { width: 180px; height: 16px; border-radius: 8px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.2); overflow: hidden; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); transition: width .15s; }
+  .hud-tag { font-size: 13px; color: var(--text-dim); background: rgba(0,0,0,.4); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); }
+  .hud-tag b { color: var(--gold); }
+
+  /* overlays */
+  .overlay { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+    background: rgba(5,6,12,.78); backdrop-filter: blur(4px); }
+  .overlay[hidden] { display: none; }
+  .card { width: min(92vw, 420px); background: linear-gradient(160deg, var(--panel), var(--panel2));
+    border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 26px 24px; text-align: center; }
+  .card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: 2px; color: var(--gold); }
+  .card p { margin: 6px 0; font-size: 13px; line-height: 1.7; color: var(--text-dim); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px;
+    border-radius: 22px; border: 1px solid transparent; background: var(--accent); color: #08243b; font-size: 15px;
+    font-weight: 600; cursor: pointer; margin-top: 14px; }
+  .btn:active { transform: scale(.97); }
+  .btn.secondary { background: rgba(255,255,255,.08); color: var(--text); border-color: rgba(255,255,255,.2); }
+  .controls-tip { text-align: left; font-size: 12px; color: var(--text-dim); background: rgba(255,255,255,.04);
+    border-radius: 10px; padding: 10px 14px; margin-top: 12px; line-height: 1.8; }
+
+  .shop-list { text-align: left; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow-y: auto; }
+  .shop-row { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 8px 12px; }
+  .shop-row span { font-size: 13px; }
+  .shop-row small { color: var(--text-dim); margin-left: 4px; }
+  .shop-row button { min-height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2);
+    background: var(--panel2); color: var(--text); font-size: 12px; cursor: pointer; }
+  .shop-row button:disabled { opacity: .4; cursor: default; }
+</style>
+</head>
+<body>
+<a class="back-link" href="../index.html">&larr; 返回</a>
+<button class="mute-btn" id="muteBtn" title="静音/取消静音">🔊</button>
+
+<div id="stage">
+  <canvas id="game"></canvas>
+</div>
+
+<div id="hud" hidden>
+  <div class="hud-row">
+    <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
+    <span class="hud-tag" id="hpText">100/100</span>
+  </div>
+  <div class="hud-row">
+    <span class="hud-tag" id="levelInfo">关卡 1/1</span>
+    <span class="hud-tag">武器: <b id="weaponName">双持手枪</b></span>
+    <span class="hud-tag">弹药: <b id="ammoText">∞</b></span>
+    <span class="hud-tag">资金: <b id="moneyText">$0</b></span>
+    <span class="hud-tag" id="waveInfo">剩余威胁: 0</span>
+  </div>
+</div>
+
+<div class="overlay" id="menuOverlay">
+  <div class="card">
+    <h2>孤胆枪手 · Demo</h2>
+    <p>灵感来自 Alien Shooter（2003, Sigma Team）。几何占位美术，非官方同人复刻，仅还原玩法与数值节奏。</p>
+    <div class="controls-tip">
+      WASD 移动&nbsp;·&nbsp;鼠标点击指定方向&nbsp;·&nbsp;瞄准方向有怪物时自动开火<br/>
+      数字键 1-4 切换武器（需先在商店解锁）<br/>
+      击碎可疑裂纹墙体可获得隐藏奖励
+    </div>
+    <button class="btn" id="startBtn">开始游戏</button>
+  </div>
+</div>
+
+<div class="overlay" id="shopOverlay" hidden>
+  <div class="card">
+    <h2>关间补给站</h2>
+    <p>资金 <b id="shopMoney" style="color:var(--gold)">$0</b> · 用击杀与探索获得的钱解锁武器 / 补充弹药</p>
+    <div class="shop-list" id="shopList"></div>
+    <button class="btn" id="nextLevelBtn">前往下一关</button>
+  </div>
+</div>
+
+<div class="overlay" id="gameoverOverlay" hidden>
+  <div class="card">
+    <h2 style="color:var(--danger)">GAME OVER</h2>
+    <p>你被怪物蜂群吞没了。资金与已解锁武器会保留，重新挑战本关。</p>
+    <button class="btn" id="retryBtn">重试本关</button>
+  </div>
+</div>
+
+<div class="overlay" id="winOverlay" hidden>
+  <div class="card">
+    <h2 style="color:var(--ok)">DEMO 通关</h2>
+    <p id="winStats"></p>
+    <button class="btn secondary" id="restartBtn">重新开始</button>
+  </div>
+</div>
+
+<!-- ================= 纯逻辑引擎：不依赖 DOM / Canvas ================= -->
+<script id="as-engine">
+const LOGICAL_W = 960, LOGICAL_H = 540;
+
+const TIER_MULT = { green: 1, yellow: 1.5, red: 2.2, blue: 3 };
+const TIER_COLOR = { green: '#4ade80', yellow: '#facc15', red: '#ef4444', blue: '#38bdf8' };
+const KNOCKBACK_SPEED = 170; // 怪物受击后短暂击退速度（像素/秒）
+
+// 武器数值：按 DESIGN.md 第4节「原版数据 -> Demo 自定义单位」映射表
+const WEAPON_DEFS = {
+  pistol:  { id: 'pistol',  name: '双持手枪',   dmg: 8,  rof: 5,    pellets: 1, spread: 0,            bulletSpeed: 700, bulletR: 3,   color: '#f2f4f8', infinite: true,  cost: 0 },
+  shotgun: { id: 'shotgun', name: '霰弹枪',     dmg: 10, rof: 2.5,  pellets: 5, spread: Math.PI / 6,  bulletSpeed: 600, bulletR: 3,   color: '#facc15', infinite: false, cost: 200,  startAmmo: 40 },
+  grenade: { id: 'grenade', name: '榴弹发射器', dmg: 60, rof: 3,    pellets: 1, spread: 0,            bulletSpeed: 420, bulletR: 6,   color: '#fb923c', infinite: false, cost: 350,  startAmmo: 15, explodeR: 50 },
+  minigun: { id: 'minigun', name: '机枪',       dmg: 12, rof: 10,   pellets: 1, spread: Math.PI / 36, bulletSpeed: 900, bulletR: 2.5, color: '#38bdf8', infinite: false, cost: 1000, startAmmo: 100 }
+};
+const WEAPON_ORDER = ['pistol', 'shotgun', 'grenade', 'minigun'];
+const AMMO_REFILL = {
+  shotgun: { amount: 20, cost: 40 },
+  grenade: { amount: 6,  cost: 60 },
+  minigun: { amount: 60, cost: 50 }
+};
+
+// 怪物数值：2 大类 x 4 色阶，色阶倍率统一施加在 HP / 攻击上
+const MONSTER_DEFS = {
+  frog:   { id: 'frog',   name: '变异青蛙', shape: 'triangle', r: 14, baseHp: 20, speedGreen: 60, speedOther: 80, baseAtk: 5, meleeRange: 20, atkInterval: 1.0, moneyBase: 5 },
+  spider: { id: 'spider', name: '巨型蜘蛛', shape: 'hex',      r: 15, baseHp: 15, speed: 100,                     baseAtk: 8, meleeRange: 18, rangedRange: 220, rangedTiers: ['yellow', 'red', 'blue'], atkInterval: 1.3, moneyBase: 5 }
+};
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+// 两个角度的最短夹角差，结果落在 [0, PI]，用于判断某方向是否落在瞄准锥内（不受 -PI/PI 跨越边界影响）
+function angleDiff(a, b) { let d = Math.abs(a - b) % (Math.PI * 2); return d > Math.PI ? Math.PI * 2 - d : d; }
+const AUTO_FIRE_CONE = Math.PI / 12; // 自动开火的瞄准锥半角（15度）：瞄准方向附近有怪物才会自动开火，避免对空浪费弹药
+
+// 圆形实体 vs 矩形墙体集合是否发生重叠（用于移动阻挡）
+function collidesAny(x, y, r, walls) {
+  for (const w of walls) {
+    if (x + r > w.x && x - r < w.x + w.w && y + r > w.y && y - r < w.y + w.h) return true;
+  }
+  return false;
+}
+// 轴分离移动碰撞：分别尝试 x / y 方向位移，允许沿墙滑动
+function moveWithCollision(entity, dx, dy, r, walls) {
+  const nx = entity.x + dx;
+  const xMoved = !collidesAny(nx, entity.y, r, walls);
+  if (xMoved) entity.x = nx;
+  const ny = entity.y + dy;
+  const yMoved = !collidesAny(entity.x, ny, r, walls);
+  if (yMoved) entity.y = ny;
+  return { xMoved, yMoved };
+}
+
+// 空间网格：按格子分桶，碰撞检测只比较邻近格，避免 O(n*m) 两两判断
+function buildGrid(list, cellSize) {
+  const map = new Map();
+  for (const item of list) {
+    if (item.alive === false) continue;
+    const key = Math.floor(item.x / cellSize) + ',' + Math.floor(item.y / cellSize);
+    let arr = map.get(key);
+    if (!arr) { arr = []; map.set(key, arr); }
+    arr.push(item);
+  }
+  return map;
+}
+function queryGrid(map, cellSize, x, y) {
+  const cx = Math.floor(x / cellSize), cy = Math.floor(y / cellSize);
+  const out = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      const arr = map.get((cx + dx) + ',' + (cy + dy));
+      if (arr) for (const it of arr) out.push(it);
+    }
+  }
+  return out;
+}
+
+// 子弹 / 特效对象池：固定数组 + alive 标记复用，避免逐帧 new/delete 产生 GC 压力
+function makePool(n) { const arr = []; for (let i = 0; i < n; i++) arr.push({ alive: false }); return arr; }
+function spawnFromPool(pool, data) {
+  for (const item of pool) {
+    if (!item.alive) { Object.assign(item, data); item.alive = true; return item; }
+  }
+  return null; // 池已满，丢弃本次生成（Demo 规模下不会触发）
+}
+
+// 按刷怪点轮流错开生成一批同类怪物，用于把波次密度写得紧凑（还原原版"蜂群"规模）
+function spreadJobs(type, tier, count, pointIndices, startDelay, gap) {
+  const jobs = [];
+  for (let i = 0; i < count; i++) jobs.push({ type, tier, pointIdx: pointIndices[i % pointIndices.length], delay: startDelay + i * gap });
+  return jobs;
+}
+
+// 关卡配置：墙体(含外框) / 隐藏夹层墙(可被子弹打穿) / 拾取物 / 刷怪点 / 波次 / 出口闸门
+const LEVELS = [
+  { // Level 1：前哨站 —— 解锁变异青蛙
+    name: '前哨站',
+    playerStart: { x: 60, y: 270 },
+    walls: [
+      { x: 0, y: 0, w: 960, h: 20 }, { x: 0, y: 520, w: 960, h: 20 },
+      { x: 0, y: 0, w: 20, h: 540 }, { x: 940, y: 0, w: 20, h: 540 },
+      { x: 260, y: 20, w: 20, h: 180 }, { x: 260, y: 340, w: 20, h: 200 }, // 起始房 -> 走廊（门 y:200-340）
+      { x: 620, y: 20, w: 20, h: 150 }, { x: 620, y: 290, w: 20, h: 250 }  // 走廊 -> 主战房（门 y:170-290）
+    ],
+    hiddenWalls: [
+      { x: 100, y: 60, w: 60, h: 40, hp: 30, maxHp: 30, loot: { money: 100 } }
+    ],
+    pickups: [
+      { x: 150, y: 400, r: 10, type: 'health', amount: 30 },
+      { x: 450, y: 255, r: 10, type: 'health', amount: 30 },
+      { x: 550, y: 255, r: 8,  type: 'money',  amount: 20 },
+      { x: 720, y: 450, r: 8,  type: 'money',  amount: 20 }
+    ],
+    spawnPoints: [{ x: 880, y: 60 }, { x: 880, y: 480 }, { x: 700, y: 260 }],
+    gate: { x: 860, y: 200, w: 80, h: 140 },
+    waves: [
+      { jobs: spreadJobs('frog', 'green', 10, [0, 1, 2], 0.5, 0.4) },
+      { jobs: spreadJobs('frog', 'yellow', 6, [0, 1, 2], 0.5, 0.5) },
+      { jobs: spreadJobs('frog', 'red', 4, [0, 1], 0.5, 0.6),
+        spawners: [
+          { pointIdx: 2, enemyType: 'frog', tier: 'green', interval: 2.5, maxSpawns: 10, hp: 40 },
+          { pointIdx: 0, enemyType: 'frog', tier: 'green', interval: 3, maxSpawns: 8, hp: 40 }
+        ] }
+    ]
+  },
+  { // Level 2：通风管道 —— 解锁巨型蜘蛛
+    name: '通风管道',
+    playerStart: { x: 60, y: 270 },
+    walls: [
+      { x: 0, y: 0, w: 960, h: 20 }, { x: 0, y: 520, w: 960, h: 20 },
+      { x: 0, y: 0, w: 20, h: 540 }, { x: 940, y: 0, w: 20, h: 540 },
+      { x: 300, y: 20, w: 20, h: 130 }, { x: 300, y: 300, w: 20, h: 220 }, // 起始房 -> 中间房（门 y:150-300）
+      { x: 560, y: 20, w: 20, h: 150 }, { x: 560, y: 270, w: 20, h: 250 }  // 中间房 -> 主战房（门 y:170-270）
+    ],
+    hiddenWalls: [
+      { x: 360, y: 440, w: 60, h: 40, hp: 40, maxHp: 40, loot: { money: 150 } }
+    ],
+    pickups: [
+      { x: 150, y: 150, r: 10, type: 'health', amount: 30 },
+      { x: 420, y: 450, r: 10, type: 'health', amount: 30 },
+      { x: 700, y: 120, r: 8,  type: 'money',  amount: 25 }
+    ],
+    spawnPoints: [{ x: 860, y: 70 }, { x: 860, y: 470 }, { x: 650, y: 450 }, { x: 650, y: 90 }],
+    gate: { x: 860, y: 200, w: 80, h: 140 },
+    waves: [
+      { jobs: spreadJobs('frog', 'yellow', 6, [0, 1], 0.5, 0.5).concat(spreadJobs('spider', 'green', 6, [2, 3], 1, 0.5)) },
+      { jobs: spreadJobs('frog', 'red', 4, [0, 1], 0.5, 0.6).concat(spreadJobs('spider', 'yellow', 8, [2, 3], 0.5, 0.4)) },
+      { jobs: spreadJobs('spider', 'red', 6, [2, 3], 0.5, 0.6),
+        spawners: [
+          { pointIdx: 0, enemyType: 'frog', tier: 'yellow', interval: 3, maxSpawns: 10, hp: 50 },
+          { pointIdx: 1, enemyType: 'spider', tier: 'green', interval: 3.5, maxSpawns: 8, hp: 35 }
+        ] }
+    ]
+  },
+  { // Level 3：核心反应堆 —— 双分支路线（上/下任选），首次出现蓝色阶
+    name: '核心反应堆',
+    playerStart: { x: 60, y: 270 },
+    walls: [
+      { x: 0, y: 0, w: 960, h: 20 }, { x: 0, y: 520, w: 960, h: 20 },
+      { x: 0, y: 0, w: 20, h: 540 }, { x: 940, y: 0, w: 20, h: 540 },
+      { x: 220, y: 20, w: 20, h: 180 }, { x: 220, y: 340, w: 20, h: 200 }, // 起始房 -> 中枢房（门 y:200-340）
+      { x: 420, y: 260, w: 280, h: 20 }, // 中枢房 -> 分成上/下两条支线（任选一条推进）
+      { x: 700, y: 20, w: 20, h: 40 }, { x: 700, y: 160, w: 20, h: 220 }, { x: 700, y: 480, w: 20, h: 40 } // 支线 -> 终室（上门 y:60-160，下门 y:380-480）
+    ],
+    hiddenWalls: [
+      { x: 480, y: 380, w: 60, h: 40, hp: 50, maxHp: 50, loot: { money: 200 } }
+    ],
+    pickups: [
+      { x: 150, y: 400, r: 10, type: 'health', amount: 30 },
+      { x: 320, y: 270, r: 8,  type: 'money',  amount: 20 },
+      { x: 550, y: 60,  r: 10, type: 'health', amount: 30 },
+      { x: 550, y: 480, r: 8,  type: 'money',  amount: 25 }
+    ],
+    spawnPoints: [{ x: 880, y: 90 }, { x: 880, y: 450 }, { x: 550, y: 60 }, { x: 550, y: 480 }, { x: 380, y: 120 }, { x: 380, y: 420 }],
+    gate: { x: 860, y: 200, w: 80, h: 140 },
+    waves: [
+      { jobs: spreadJobs('frog', 'yellow', 8, [2, 3], 0.5, 0.4).concat(spreadJobs('spider', 'green', 4, [4, 5], 1, 0.5)) },
+      { jobs: spreadJobs('frog', 'red', 6, [0, 1], 0.5, 0.5).concat(spreadJobs('spider', 'yellow', 8, [2, 3], 0.5, 0.4)) },
+      { jobs: spreadJobs('spider', 'red', 6, [0, 1], 0.5, 0.6).concat(spreadJobs('frog', 'blue', 4, [2, 3], 1, 0.7)), // 首次出现蓝色阶
+        spawners: [
+          { pointIdx: 4, enemyType: 'frog', tier: 'red', interval: 2.5, maxSpawns: 10, hp: 60 },
+          { pointIdx: 5, enemyType: 'spider', tier: 'red', interval: 3, maxSpawns: 8, hp: 45 }
+        ] }
+    ]
+  },
+  { // Level 4：逃生甲板 —— 中央障碍物形成环形双路线，终局蓝色阶蜂群
+    name: '逃生甲板',
+    playerStart: { x: 60, y: 270 },
+    walls: [
+      { x: 0, y: 0, w: 960, h: 20 }, { x: 0, y: 520, w: 960, h: 20 },
+      { x: 0, y: 0, w: 20, h: 540 }, { x: 940, y: 0, w: 20, h: 540 },
+      { x: 340, y: 150, w: 280, h: 240 } // 中央反应堆核心：障碍物，强制绕行上/下两条环路
+    ],
+    hiddenWalls: [ // 放在左侧翼区域（离上下环路走廊至少15px余量），避免怪物贴墙角拥堵
+      { x: 150, y: 165, w: 50, h: 30, hp: 50, maxHp: 50, loot: { money: 200 } },
+      { x: 150, y: 330, w: 50, h: 30, hp: 50, maxHp: 50, loot: { money: 200 } }
+    ],
+    pickups: [
+      { x: 480, y: 60,  r: 10, type: 'health', amount: 30 },
+      { x: 480, y: 480, r: 10, type: 'health', amount: 30 },
+      { x: 780, y: 270, r: 8,  type: 'money',  amount: 25 },
+      { x: 150, y: 270, r: 8,  type: 'money',  amount: 25 }
+    ],
+    spawnPoints: [{ x: 880, y: 60 }, { x: 880, y: 480 }, { x: 480, y: 60 }, { x: 480, y: 480 }, { x: 150, y: 60 }, { x: 150, y: 480 }],
+    gate: { x: 860, y: 200, w: 80, h: 140 },
+    waves: [
+      { jobs: spreadJobs('frog', 'red', 10, [0, 1, 2, 3], 0.3, 0.3).concat(spreadJobs('spider', 'red', 6, [4, 5], 0.5, 0.4)) },
+      { jobs: spreadJobs('spider', 'blue', 4, [0, 1], 0.5, 0.6).concat(spreadJobs('frog', 'blue', 4, [2, 3], 0.5, 0.6)).concat(spreadJobs('spider', 'red', 6, [4, 5], 0.5, 0.4)) },
+      { jobs: spreadJobs('frog', 'blue', 4, [0, 2, 4], 0.3, 0.5).concat(spreadJobs('spider', 'blue', 4, [1, 3, 5], 0.3, 0.5)), // 终局蓝色阶大规模蜂群
+        spawners: [
+          { pointIdx: 4, enemyType: 'frog', tier: 'red', interval: 2, maxSpawns: 12, hp: 60 },
+          { pointIdx: 5, enemyType: 'spider', tier: 'red', interval: 2.5, maxSpawns: 10, hp: 45 },
+          { pointIdx: 2, enemyType: 'frog', tier: 'blue', interval: 4, maxSpawns: 6, hp: 90 }
+        ] }
+    ]
+  }
+];
+
+class Game {
+  constructor() {
+    this.player = { x: 60, y: 270, angle: 0, hp: 100, maxHp: 100, speed: 180, r: 12, fireCooldown: 0, hitFlash: 0 };
+    this.input = { up: false, down: false, left: false, right: false };
+    this.money = 0;
+    this.killCount = 0;
+    this.elapsed = 0;
+    this.weapons = { pistol: true, shotgun: false, grenade: false, minigun: false };
+    this.ammo = { shotgun: 0, grenade: 0, minigun: 0 };
+    this.currentWeapon = 'pistol';
+    this.enemies = [];
+    this.pickups = [];
+    this.walls = [];
+    this.hiddenWalls = [];
+    this.gate = null;
+    this.bullets = makePool(600);
+    this.effects = makePool(300);
+    this.levelIndex = 0;
+    this.waveState = null;
+    this.levelCleared = false;
+    this.state = 'menu'; // menu | playing | shop | gameover | win
+    this.nextEnemyId = 1;
+    this._solids = [];
+    this.events = []; // 本帧产生的音效/反馈事件，渲染层消费后清空，引擎本身不依赖Audio/DOM
+  }
+
+  loadLevel(idx) {
+    const lvl = LEVELS[idx];
+    this.levelIndex = idx;
+    this.walls = lvl.walls.slice();
+    this.hiddenWalls = lvl.hiddenWalls.map(h => Object.assign({}, h));
+    this.gate = Object.assign({}, lvl.gate);
+    this.pickups = lvl.pickups.map(p => Object.assign({ taken: false }, p));
+    this.enemies = [];
+    for (const b of this.bullets) b.alive = false;
+    for (const fx of this.effects) fx.alive = false;
+    this.player.x = lvl.playerStart.x;
+    this.player.y = lvl.playerStart.y;
+    this.player.hp = this.player.maxHp;
+    this.levelCleared = false;
+    this.events = [];
+    this.startWave(lvl, 0);
+    this.state = 'playing';
+  }
+
+  startWave(lvl, waveIdx) {
+    if (waveIdx >= lvl.waves.length) { this.levelCleared = true; this.waveState = null; return; }
+    const wd = lvl.waves[waveIdx];
+    const jobs = wd.jobs.map(j => Object.assign({ spawned: false, t: j.delay }, j));
+    const spawnerDefs = wd.spawners || [];
+    const spawners = spawnerDefs.map(sd => {
+      const sp = lvl.spawnPoints[sd.pointIdx];
+      const ref = this.spawnEnemy(sd.enemyType, sd.tier, sp.x, sp.y, 'wave' + waveIdx, { isSpawner: true, hp: sd.hp, maxHp: sd.hp });
+      return { ref, timer: sd.interval, interval: sd.interval, enemyType: sd.enemyType, tier: sd.tier, pointIdx: sd.pointIdx, maxSpawns: sd.maxSpawns, spawnCount: 0 };
+    });
+    this.waveState = { lvl, waveIdx, tag: 'wave' + waveIdx, jobs, spawners, spawnPoints: lvl.spawnPoints };
+  }
+
+  spawnEnemy(type, tier, x, y, waveTag, overrides) {
+    const def = MONSTER_DEFS[type];
+    const mult = TIER_MULT[tier];
+    const e = {
+      id: this.nextEnemyId++, type, tier, x, y, r: def.r,
+      hp: def.baseHp * mult, maxHp: def.baseHp * mult,
+      speed: type === 'frog' ? (tier === 'green' ? def.speedGreen : def.speedOther) : def.speed,
+      atk: def.baseAtk * mult,
+      meleeRange: def.meleeRange,
+      rangedRange: def.rangedRange || 0,
+      ranged: !!(def.rangedTiers && def.rangedTiers.includes(tier)),
+      atkInterval: def.atkInterval,
+      atkCooldown: Math.random() * def.atkInterval,
+      alive: true, isSpawner: false, waveTag,
+      moneyDrop: Math.round(def.moneyBase * mult),
+      hitFlash: 0, kbTimer: 0, kbVx: 0, kbVy: 0, facingAngle: 0,
+      // 动画状态：animT 驱动走路步频/呼吸摆动（随机初始相位避免所有怪物同步抽动），
+      // attackPulse 驱动扑咬/撕咬动画（攻击瞬间置1，随后衰减到0），moving 供渲染层判断步态快慢
+      animT: Math.random() * 10, attackPulse: 0, moving: false
+    };
+    if (overrides) Object.assign(e, overrides);
+    this.enemies.push(e);
+    return e;
+  }
+
+  update(dt) {
+    if (this.state !== 'playing') return;
+    this.elapsed += dt;
+    this._solids = this.walls.concat(this.hiddenWalls.filter(h => h.hp > 0));
+    this.updatePlayer(dt);
+    this.updateWave(dt);
+    this.updateEnemies(dt);
+    this.updateBullets(dt);
+    this.updateEffects(dt);
+    this.updatePickups();
+    this.checkLevelComplete();
+  }
+
+  updatePlayer(dt) {
+    const p = this.player;
+    let dx = 0, dy = 0;
+    if (this.input.up) dy -= 1;
+    if (this.input.down) dy += 1;
+    if (this.input.left) dx -= 1;
+    if (this.input.right) dx += 1;
+    if (dx || dy) {
+      const len = Math.hypot(dx, dy);
+      moveWithCollision(p, (dx / len) * p.speed * dt, (dy / len) * p.speed * dt, p.r, this._solids);
+    }
+    p.x = clamp(p.x, 20, LOGICAL_W - 20);
+    p.y = clamp(p.y, 20, LOGICAL_H - 20);
+    if (p.hitFlash > 0) p.hitFlash -= dt;
+    p.fireCooldown -= dt;
+    // 自动开火：不再由鼠标按住驱动，只要冷却结束且当前瞄准方向附近确实有怪物就持续开火，
+    // 鼠标点击只负责设定瞄准方向（见 mousedown 监听），避免对着空地白白消耗弹药
+    if (p.fireCooldown <= 0 && this.hasEnemyInSights()) this.tryFire();
+  }
+
+  // 判断玩家当前瞄准方向的锥形范围内是否存在可被命中的活着的敌人（含刷怪点：它必须被击毁才能推进波次，否则场上只剩巢穴时无法自动开火）
+  hasEnemyInSights() {
+    const p = this.player;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const ang = Math.atan2(e.y - p.y, e.x - p.x);
+      if (angleDiff(ang, p.angle) <= AUTO_FIRE_CONE) return true;
+    }
+    return false;
+  }
+
+  tryFire() {
+    const wd = WEAPON_DEFS[this.currentWeapon];
+    if (!wd.infinite) {
+      if (this.ammo[this.currentWeapon] <= 0) return; // 弹药不足，静默不开火
+      this.ammo[this.currentWeapon]--;
+    }
+    this.player.fireCooldown = 1 / wd.rof;
+    this.events.push({ type: 'fire', weapon: this.currentWeapon });
+    const base = this.player.angle;
+    const n = wd.pellets;
+    for (let i = 0; i < n; i++) {
+      let angle = base;
+      if (n > 1) angle = base - wd.spread / 2 + (wd.spread / (n - 1)) * i;
+      else if (wd.spread > 0) angle = base + (Math.random() - 0.5) * wd.spread;
+      spawnFromPool(this.bullets, {
+        owner: 'player',
+        x: this.player.x + Math.cos(angle) * (this.player.r + 2), y: this.player.y + Math.sin(angle) * (this.player.r + 2),
+        vx: Math.cos(angle) * wd.bulletSpeed, vy: Math.sin(angle) * wd.bulletSpeed,
+        dmg: wd.dmg, r: wd.bulletR, color: wd.color, life: 0.9, explodeR: wd.explodeR || 0
+      });
+    }
+  }
+
+  updateWave(dt) {
+    const ws = this.waveState;
+    if (!ws) return;
+    for (const job of ws.jobs) {
+      if (job.spawned) continue;
+      job.t -= dt;
+      if (job.t <= 0) {
+        const sp = ws.spawnPoints[job.pointIdx];
+        this.spawnEnemy(job.type, job.tier, sp.x, sp.y, ws.tag);
+        job.spawned = true;
+      }
+    }
+    for (const sw of ws.spawners) {
+      if (!sw.ref.alive) continue;
+      sw.timer -= dt;
+      if (sw.timer <= 0 && sw.spawnCount < sw.maxSpawns) {
+        const sp = ws.spawnPoints[sw.pointIdx];
+        const ang = Math.random() * Math.PI * 2;
+        this.spawnEnemy(sw.enemyType, sw.tier, sp.x + Math.cos(ang) * 20, sp.y + Math.sin(ang) * 20, ws.tag);
+        sw.spawnCount++;
+        sw.timer = sw.interval;
+      }
+    }
+    const jobsDone = ws.jobs.every(j => j.spawned);
+    const spawnersDone = ws.spawners.every(sw => !sw.ref.alive);
+    const aliveFromWave = this.enemies.some(e => e.waveTag === ws.tag && e.alive);
+    if (jobsDone && spawnersDone && !aliveFromWave) this.startWave(ws.lvl, ws.waveIdx + 1);
+  }
+
+  updateEnemies(dt) {
+    const p = this.player;
+    const enemyGrid = buildGrid(this.enemies, 60);
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      e.atkCooldown -= dt;
+      if (e.hitFlash > 0) e.hitFlash -= dt;
+      if (e.attackPulse > 0) e.attackPulse = Math.max(0, e.attackPulse - dt * 3.5); // 扑咬动作衰减
+      if (e.isSpawner) continue; // 刷怪点本体不移动不攻击，只负责产怪
+
+      if (e.kbTimer > 0) { // 受击击退中：优先执行击退位移，暂停AI，制造"被打退"的手感
+        e.kbTimer -= dt;
+        moveWithCollision(e, e.kbVx * dt, e.kbVy * dt, e.r, this._solids);
+        e.kbVx *= 0.88; e.kbVy *= 0.88;
+        e.moving = false;
+        e.animT += dt * 3; // 被击退时腿部仍有挣扎抽动，而非完全静止
+        continue;
+      }
+
+      const ddx = p.x - e.x, ddy = p.y - e.y;
+      const d = Math.hypot(ddx, ddy) || 1;
+      const inMelee = d <= e.meleeRange + p.r;
+      const inRanged = e.ranged && d <= e.rangedRange;
+      e.facingAngle = Math.atan2(ddy, ddx);
+
+      // 追击移动优先：先保证怪物始终能可靠地朝玩家推进（含贴墙滑动），分离力作为独立的二次微调叠加在后面，
+      // 不混入主方向计算，避免分离力在次要轴上反超追击分量、把怪物带偏甚至带入墙角卡死
+      const mvx = inMelee ? 0 : ddx / d, mvy = inMelee ? 0 : ddy / d;
+      const mlen = Math.hypot(mvx, mvy);
+      e.moving = mlen > 0.01;
+      // 步频随自身移动速度等比缩放（快的怪物腿摆得更快），静止/缠斗时退化为低速呼吸摆动
+      e.animT += dt * (e.moving ? (e.speed / 42) : 1.4);
+      if (mlen > 0.01) {
+        const stepX = (mvx / mlen) * e.speed * dt, stepY = (mvy / mlen) * e.speed * dt;
+        const res = moveWithCollision(e, stepX, stepY, e.r, this._solids);
+        // 贴墙打滑修正：主轴被墙挡住、而垂直分量本身很小时（追击方向几乎与墙平行），补一个最低滑动速度，
+        // 避免在门缝/墙角处因为自然分量过小而要爬行很久才能脱困。
+        // 滑动方向一旦选定就保持（粘滞），直到该轴真正脱困（xMoved/yMoved 变 true）才允许重新判定：
+        // 否则当怪物卡在"与玩家 y(或x)几乎同线"的墙角时，ddy/ddx 符号会因微小抖动反复翻转，
+        // 导致怪物在门缝下边界附近来回震荡、永远达不到真正能穿过门缝所需的纵深，形成死锁式卡墙。
+        const minSlide = e.speed * dt * 0.3;
+        if (!res.xMoved && Math.abs(stepY) < minSlide) {
+          if (e._slideDirY === undefined) e._slideDirY = Math.sign(ddy || 1);
+          moveWithCollision(e, 0, e._slideDirY * minSlide, e.r, this._solids);
+        } else e._slideDirY = undefined;
+        if (!res.yMoved && Math.abs(stepX) < minSlide) {
+          if (e._slideDirX === undefined) e._slideDirX = Math.sign(ddx || 1);
+          moveWithCollision(e, e._slideDirX * minSlide, 0, e.r, this._solids);
+        } else e._slideDirX = undefined;
+      }
+      // 群体分离：与邻近怪物距离过近时互相推开，避免原地重叠堆叠，形成蜂群式的松散包围（独立于追击的轻量修正）
+      let sepX = 0, sepY = 0;
+      const neighbors = queryGrid(enemyGrid, 60, e.x, e.y);
+      for (const o of neighbors) {
+        if (o === e || !o.alive || o.isSpawner) continue;
+        const dx2 = e.x - o.x, dy2 = e.y - o.y;
+        const dist = Math.hypot(dx2, dy2) || 0.01;
+        const minDist = e.r + o.r + 4;
+        if (dist < minDist) { const push = (minDist - dist) / minDist; sepX += (dx2 / dist) * push; sepY += (dy2 / dist) * push; }
+      }
+      // 分离力不能抵消追击方向上的净前进：只移除"朝远离玩家方向"的分量，避免门口/墙角拥堵时
+      // 多个怪物的分离力反复把追击刚换来的位移推回去，导致排队怪物整体卡死不前进
+      const dirX = ddx / d, dirY = ddy / d;
+      const backDot = sepX * dirX + sepY * dirY;
+      if (backDot < 0) { sepX -= backDot * dirX; sepY -= backDot * dirY; }
+      const sepLen = Math.hypot(sepX, sepY);
+      if (sepLen > 0.01) moveWithCollision(e, (sepX / sepLen) * e.speed * 0.6 * dt, (sepY / sepLen) * e.speed * 0.6 * dt, e.r, this._solids);
+
+      if (inMelee && e.atkCooldown <= 0) {
+        this.damagePlayer(e.atk);
+        e.atkCooldown = e.atkInterval;
+        e.attackPulse = 1; // 触发扑咬动画（张口/亮牙）
+      } else if (inRanged && !inMelee && e.atkCooldown <= 0) {
+        const angle = Math.atan2(ddy, ddx);
+        spawnFromPool(this.bullets, { owner: 'enemy', x: e.x + Math.cos(angle) * e.r, y: e.y + Math.sin(angle) * e.r, vx: Math.cos(angle) * 260, vy: Math.sin(angle) * 260, dmg: e.atk, r: 4, color: '#a855f7', life: 1.2 });
+        e.atkCooldown = e.atkInterval;
+        e.attackPulse = 1; // 触发吐丝/喷射动画
+        this.events.push({ type: 'enemyFire' });
+      }
+    }
+    this.enemies = this.enemies.filter(e => e.alive);
+  }
+
+  damagePlayer(amount) {
+    this.player.hp -= amount;
+    this.player.hitFlash = 0.2;
+    this.events.push({ type: 'hurt' });
+    if (this.player.hp <= 0) { this.player.hp = 0; this.state = 'gameover'; }
+  }
+
+  updateBullets(dt) {
+    const enemyGrid = buildGrid(this.enemies, 80);
+    for (const b of this.bullets) {
+      if (!b.alive) continue;
+      b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+      if (b.life <= 0 || b.x < 0 || b.x > LOGICAL_W || b.y < 0 || b.y > LOGICAL_H) { b.alive = false; continue; }
+      if (collidesAny(b.x, b.y, b.r, this.walls)) { b.alive = false; this.spawnEffect('spark', b.x, b.y, '#9ca3af'); continue; }
+      if (b.owner === 'player') {
+        let hitHidden = false;
+        for (const hw of this.hiddenWalls) {
+          if (hw.hp <= 0) continue;
+          if (b.x > hw.x && b.x < hw.x + hw.w && b.y > hw.y && b.y < hw.y + hw.h) {
+            hw.hp -= b.dmg; b.alive = false; hitHidden = true;
+            if (hw.hp <= 0) this.breakHiddenWall(hw);
+            break;
+          }
+        }
+        if (hitHidden) continue;
+        const near = queryGrid(enemyGrid, 80, b.x, b.y);
+        for (const e of near) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.x - b.x, e.y - b.y) <= e.r + b.r) {
+            if (b.explodeR) this.explode(b.x, b.y, b.explodeR, b.dmg);
+            else {
+              const bl = Math.hypot(b.vx, b.vy) || 1;
+              this.applyDamageToEnemy(e, b.dmg, b.vx / bl, b.vy / bl);
+            }
+            b.alive = false;
+            break;
+          }
+        }
+      } else {
+        if (Math.hypot(this.player.x - b.x, this.player.y - b.y) <= this.player.r + b.r) {
+          this.damagePlayer(b.dmg);
+          b.alive = false;
+        }
+      }
+    }
+  }
+
+  explode(x, y, r, dmg) {
+    this.spawnEffect('explosion', x, y, '#fb923c');
+    this.events.push({ type: 'explosion' });
+    for (const e of this.enemies) {
+      if (!e.alive || Math.hypot(e.x - x, e.y - y) > r) continue;
+      const d = Math.hypot(e.x - x, e.y - y) || 1;
+      this.applyDamageToEnemy(e, dmg, (e.x - x) / d, (e.y - y) / d);
+    }
+  }
+
+  applyDamageToEnemy(e, dmg, kbx, kby) {
+    e.hp -= dmg;
+    e.hitFlash = 0.1;
+    if (kbx !== undefined) { e.kbVx = kbx * KNOCKBACK_SPEED; e.kbVy = kby * KNOCKBACK_SPEED; e.kbTimer = 0.1; }
+    if (e.hp <= 0 && e.alive) {
+      e.alive = false;
+      this.spawnEffect('burst', e.x, e.y, TIER_COLOR[e.tier]);
+      // 死亡碎屑：若干小颗粒按随机方向飞散并带惯性衰减，比单一光环更有"被击毁"的真实感
+      for (let i = 0; i < 7; i++) {
+        const a = Math.random() * Math.PI * 2, spd = 50 + Math.random() * 90;
+        this.spawnEffect('gib', e.x, e.y, TIER_COLOR[e.tier], Math.cos(a) * spd, Math.sin(a) * spd);
+      }
+      if (!e.isSpawner) { this.money += e.moneyDrop; this.killCount++; }
+      this.events.push({ type: 'kill' });
+    } else {
+      this.events.push({ type: 'hit' });
+    }
+  }
+
+  breakHiddenWall(hw) {
+    hw.revealed = true;
+    if (hw.loot && hw.loot.money) this.pickups.push({ x: hw.x + hw.w / 2, y: hw.y + hw.h / 2, r: 10, type: 'money', amount: hw.loot.money, taken: false });
+    this.spawnEffect('burst', hw.x + hw.w / 2, hw.y + hw.h / 2, '#94a3b8');
+  }
+
+  updatePickups() {
+    const p = this.player;
+    for (const pk of this.pickups) {
+      if (pk.taken) continue;
+      if (Math.hypot(p.x - pk.x, p.y - pk.y) <= p.r + pk.r) {
+        pk.taken = true;
+        if (pk.type === 'health') this.player.hp = Math.min(this.player.maxHp, this.player.hp + pk.amount);
+        else if (pk.type === 'money') this.money += pk.amount;
+        this.events.push({ type: 'pickup' });
+      }
+    }
+  }
+
+  updateEffects(dt) {
+    for (const fx of this.effects) {
+      if (!fx.alive) continue;
+      fx.t += dt;
+      if (fx.vx || fx.vy) { // 'gib' 碎屑带初始飞散速度，随时间阻力衰减
+        fx.x += fx.vx * dt; fx.y += fx.vy * dt;
+        fx.vx *= 0.9; fx.vy *= 0.9;
+      }
+      if (fx.t >= fx.maxT) fx.alive = false;
+    }
+  }
+
+  spawnEffect(kind, x, y, color, vx, vy) {
+    spawnFromPool(this.effects, { kind, x, y, t: 0, maxT: kind === 'explosion' ? 0.4 : (kind === 'gib' ? 0.45 : 0.3), color: color || '#fff', vx: vx || 0, vy: vy || 0 });
+  }
+
+  checkLevelComplete() {
+    if (!this.levelCleared) return;
+    const g = this.gate, p = this.player;
+    if (p.x > g.x && p.x < g.x + g.w && p.y > g.y && p.y < g.y + g.h) {
+      this.state = this.levelIndex < LEVELS.length - 1 ? 'shop' : 'win';
+    }
+  }
+}
+</script>
+
+<!-- ================= 渲染 / 输入 / UI ================= -->
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let game = new Game();
+let lastState = null;
+
+// ---- 画布尺寸：内部分辨率固定为 LOGICAL_W x LOGICAL_H，CSS 按窗口等比缩放 ----
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+canvas.width = LOGICAL_W * dpr;
+canvas.height = LOGICAL_H * dpr;
+ctx.scale(dpr, dpr);
+function layout() {
+  const scale = Math.min(window.innerWidth / LOGICAL_W, window.innerHeight / LOGICAL_H);
+  canvas.style.width = (LOGICAL_W * scale) + 'px';
+  canvas.style.height = (LOGICAL_H * scale) + 'px';
+}
+window.addEventListener('resize', layout);
+layout();
+
+function toLogical(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (clientX - rect.left) * (LOGICAL_W / rect.width), y: (clientY - rect.top) * (LOGICAL_H / rect.height) };
+}
+
+// ---- 输入 ----
+const KEY_MAP = { KeyW: 'up', KeyA: 'left', KeyS: 'down', KeyD: 'right' };
+const DIGIT_MAP = { Digit1: 'pistol', Digit2: 'shotgun', Digit3: 'grenade', Digit4: 'minigun' };
+window.addEventListener('keydown', e => {
+  if (KEY_MAP[e.code]) game.input[KEY_MAP[e.code]] = true;
+  const w = DIGIT_MAP[e.code];
+  if (w && game.weapons[w]) game.currentWeapon = w;
+});
+window.addEventListener('keyup', e => { if (KEY_MAP[e.code]) game.input[KEY_MAP[e.code]] = false; });
+// 瞄准方向改为仅在点击瞬间设定一次（不再随鼠标移动实时跟随），点击后保持该方向直到下一次点击；
+// 开火本身由 updatePlayer 中的自动开火逻辑驱动，鼠标左键这里只负责"指明方向"
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const pos = toLogical(e.clientX, e.clientY);
+  game.player.angle = Math.atan2(pos.y - game.player.y, pos.x - game.player.x);
+});
+
+// ---- 音效：Web Audio API 实时合成（振荡器+噪声），不依赖外部音频文件 ----
+let actx = null, masterGain = null, bgmGain = null, muted = false;
+function ensureAudio() {
+  if (!actx) {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = actx.createGain(); masterGain.gain.value = muted ? 0 : 1;
+    masterGain.connect(actx.destination);
+    startBGM();
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+function beep(freq, duration, type, peak, freqEnd) {
+  if (!actx) return;
+  const t0 = actx.currentTime;
+  const osc = actx.createOscillator(), gain = actx.createGain();
+  osc.type = type; osc.frequency.setValueAtTime(freq, t0);
+  if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t0 + duration);
+  gain.gain.setValueAtTime(peak, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+  osc.connect(gain); gain.connect(masterGain);
+  osc.start(t0); osc.stop(t0 + duration);
+}
+function noiseBurst(duration, peak) {
+  if (!actx) return;
+  const n = Math.floor(actx.sampleRate * duration);
+  const buffer = actx.createBuffer(1, n, actx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = actx.createBufferSource(); src.buffer = buffer;
+  const gain = actx.createGain(); gain.gain.setValueAtTime(peak, actx.currentTime);
+  src.connect(gain); gain.connect(masterGain);
+  src.start();
+}
+function startBGM() { // 低沉持续的双振荡器失谐 pad，营造紧张工业氛围
+  if (bgmGain) return;
+  const o1 = actx.createOscillator(), o2 = actx.createOscillator();
+  o1.type = 'sawtooth'; o1.frequency.value = 55;
+  o2.type = 'sawtooth'; o2.frequency.value = 55.6;
+  const filter = actx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 220;
+  bgmGain = actx.createGain(); bgmGain.gain.value = 0.045;
+  o1.connect(filter); o2.connect(filter); filter.connect(bgmGain); bgmGain.connect(masterGain);
+  o1.start(); o2.start();
+}
+const SOUND_MAP = {
+  fire: w => {
+    if (w === 'pistol') beep(520, 0.05, 'square', 0.1, 300);
+    else if (w === 'shotgun') { noiseBurst(0.08, 0.22); beep(160, 0.06, 'sawtooth', 0.12, 70); }
+    else if (w === 'grenade') beep(140, 0.12, 'sine', 0.18, 55);
+    else if (w === 'minigun') beep(600, 0.03, 'square', 0.07, 380);
+  },
+  enemyFire: () => beep(300, 0.08, 'sawtooth', 0.09, 150),
+  hit: () => beep(220, 0.04, 'triangle', 0.07, 110),
+  kill: () => noiseBurst(0.12, 0.18),
+  explosion: () => { noiseBurst(0.3, 0.32); beep(90, 0.3, 'sine', 0.22, 40); },
+  hurt: () => beep(140, 0.15, 'sawtooth', 0.18, 60),
+  pickup: () => beep(700, 0.08, 'sine', 0.1, 900)
+};
+function processEvents(g) { // 消费本帧事件：触发音效 + 叠加震屏强度
+  for (const ev of g.events) {
+    const fn = SOUND_MAP[ev.type];
+    if (fn) fn(ev.weapon);
+    if (ev.type === 'hurt') screenShake = Math.max(screenShake, 7);
+    else if (ev.type === 'explosion') screenShake = Math.max(screenShake, 9);
+    else if (ev.type === 'kill') screenShake = Math.max(screenShake, 2);
+  }
+  g.events.length = 0;
+}
+document.getElementById('muteBtn').onclick = () => {
+  muted = !muted;
+  document.getElementById('muteBtn').textContent = muted ? '🔇' : '🔊';
+  if (masterGain) masterGain.gain.value = muted ? 0 : 1;
+};
+
+// ---- 渲染 ----
+const SHAKE_MAX = 10;
+let screenShake = 0; // 受伤/爆炸时增加，逐帧衰减，渲染时抖动画面
+function render(g) {
+  ctx.save();
+  if (screenShake > 0.1) ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+  ctx.clearRect(-SHAKE_MAX, -SHAKE_MAX, LOGICAL_W + SHAKE_MAX * 2, LOGICAL_H + SHAKE_MAX * 2);
+  ctx.fillStyle = '#11131a';
+  ctx.fillRect(-SHAKE_MAX, -SHAKE_MAX, LOGICAL_W + SHAKE_MAX * 2, LOGICAL_H + SHAKE_MAX * 2);
+  if (!g.gate) { ctx.restore(); return; } // 尚未进入关卡（菜单/结算界面），只画背景
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= LOGICAL_W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, LOGICAL_H); ctx.stroke(); }
+  for (let y = 0; y <= LOGICAL_H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(LOGICAL_W, y); ctx.stroke(); }
+
+  ctx.fillStyle = '#2d3142';
+  for (const w of g.walls) ctx.fillRect(w.x, w.y, w.w, w.h);
+
+  for (const hw of g.hiddenWalls) {
+    if (hw.hp <= 0) continue;
+    ctx.fillStyle = '#33394d';
+    ctx.fillRect(hw.x, hw.y, hw.w, hw.h);
+    ctx.strokeStyle = 'rgba(250,204,21,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(hw.x, hw.y); ctx.lineTo(hw.x + hw.w, hw.y + hw.h);
+    ctx.moveTo(hw.x + hw.w, hw.y); ctx.lineTo(hw.x, hw.y + hw.h);
+    ctx.stroke();
+  }
+
+  const gate = g.gate;
+  ctx.fillStyle = g.levelCleared ? 'rgba(74,222,128,0.35)' : 'rgba(148,163,184,0.18)';
+  ctx.fillRect(gate.x, gate.y, gate.w, gate.h);
+
+  for (const pk of g.pickups) {
+    if (pk.taken) continue;
+    ctx.fillStyle = pk.type === 'health' ? '#f87171' : '#facc15';
+    ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1c1c1c'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(pk.type === 'health' ? '+' : '$', pk.x, pk.y + 3);
+  }
+
+  for (const e of g.enemies) drawEnemy(e);
+  for (const b of g.bullets) drawBullet(b);
+  for (const fx of g.effects) { if (fx.alive) drawEffect(fx); }
+
+  drawPlayer(g.player);
+  ctx.restore();
+}
+
+function drawBullet(b) {
+  if (!b.alive) return;
+  const speed = Math.hypot(b.vx, b.vy) || 1;
+  const tlen = Math.min(26, speed * 0.018); // 拖尾长度与速度成比例
+  const tx = b.x - (b.vx / speed) * tlen, ty = b.y - (b.vy / speed) * tlen;
+  const grad = ctx.createLinearGradient(tx, ty, b.x, b.y);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(1, b.color);
+  ctx.strokeStyle = grad; ctx.lineWidth = b.r * 1.3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(b.x, b.y); ctx.stroke();
+  ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+}
+
+// 画一条带"膝盖"弯折的腿：从(bx,by)沿ang方向伸出，wave(-1~1)驱动步态摆动（迈步/回收），
+// swingBend 控制迈步瞬间膝盖外凸的幅度，让腿在行走时有自然的屈伸感而不是生硬摆线
+function drawCreatureLeg(bx, by, ang, len, wave, swingBend) {
+  const reach = len * (0.82 + 0.3 * wave);
+  const footX = bx + Math.cos(ang) * reach, footY = by + Math.sin(ang) * reach;
+  const kneeAng = ang + swingBend * Math.max(0, wave);
+  const kneeX = bx + Math.cos(kneeAng) * len * 0.5, kneeY = by + Math.sin(kneeAng) * len * 0.5;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(kneeX, kneeY, footX, footY); ctx.stroke();
+}
+
+function drawEnemy(e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
+  const color = e.hitFlash > 0 ? '#ffffff' : TIER_COLOR[e.tier];
+  if (e.isSpawner) {
+    ctx.fillStyle = '#1f2937'; ctx.strokeStyle = TIER_COLOR[e.tier]; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  } else {
+    ctx.rotate(e.facingAngle); // 朝向目标旋转，角度0=朝+x（原点正右方）
+    const r = e.r, at = e.animT, pulse = e.attackPulse || 0;
+    const hitPop = 1 + (e.hitFlash > 0 ? e.hitFlash * 1.6 : 0); // 受击瞬间轻微放大，强化"中弹反馈"
+    if (e.type === 'frog') {
+      // 跳跃式呼吸：行走/跳跃时身体上下压扁拉伸(squash&stretch)，静止时只有轻微起伏
+      const hop = e.moving ? Math.abs(Math.sin(at * 2)) : Math.sin(at * 0.8) * 0.15 + 0.15;
+      const scaleX = (1 + hop * 0.18) * hitPop, scaleY = (1 - hop * 0.12) * hitPop;
+      ctx.save(); ctx.scale(scaleX, scaleY);
+      // 后腿：两条，交替前后摆动模拟蹬腿
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, r * 0.22); ctx.lineCap = 'round';
+      const legWave = e.moving ? Math.sin(at * 2) : Math.sin(at * 0.8) * 0.3;
+      drawCreatureLeg(-r * 0.35, -r * 0.55, Math.PI * 0.78, r * 0.95, legWave, -0.9);
+      drawCreatureLeg(-r * 0.35, r * 0.55, Math.PI * 0.78, r * 0.95, -legWave, 0.9);
+      // 身体：椭圆形更接近蛙身轮廓
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 1.05, r * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+      // 腹部浅色高光，增加立体感
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath(); ctx.ellipse(-r * 0.1, 0, r * 0.6, r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+      // 鼓起的双眼，朝攻击目标方向有瞳孔聚焦感
+      ctx.fillStyle = '#f5f7ee';
+      ctx.beginPath(); ctx.arc(r * 0.35, -r * 0.5, r * 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 0.35, r * 0.5, r * 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#14240f';
+      ctx.beginPath(); ctx.arc(r * 0.47, -r * 0.5, r * 0.13, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 0.47, r * 0.5, r * 0.13, 0, Math.PI * 2); ctx.fill();
+      // 嘴：扑咬时张大，露出暗色口腔
+      ctx.fillStyle = '#0f1a0b';
+      ctx.beginPath(); ctx.ellipse(r * 0.95, 0, r * (0.08 + pulse * 0.32), r * (0.22 + pulse * 0.3), 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    } else {
+      // 8条腿分两组交替摆动（蜘蛛式三足步态简化版），每组内 4 条同相，组间反相
+      ctx.save(); ctx.scale(hitPop, hitPop);
+      const legBases = [
+        [r * 0.5, -r * 0.7, -0.75], [r * 0.1, -r * 0.95, -1.25], [-r * 0.3, -r * 0.9, -1.85], [-r * 0.6, -r * 0.55, -2.35],
+        [r * 0.5, r * 0.7, 0.75], [r * 0.1, r * 0.95, 1.25], [-r * 0.3, r * 0.9, 1.85], [-r * 0.6, r * 0.55, 2.35]
+      ];
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, r * 0.12); ctx.lineCap = 'round';
+      for (let i = 0; i < legBases.length; i++) {
+        const [bx, by, ang] = legBases[i];
+        const group = i % 2 === 0 ? 1 : -1;
+        const wave = e.moving ? Math.sin(at * 5 + (group > 0 ? 0 : Math.PI)) : Math.sin(at * 1.0 + i) * 0.2;
+        drawCreatureLeg(bx, by, ang, r * 1.35, wave, 0.4);
+      }
+      // 身体：六边形躯干
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i, px = Math.cos(a) * r, py = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      // 背部花纹，暗示甲壳质感
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-r * 0.6, 0); ctx.lineTo(r * 0.5, 0); ctx.stroke();
+      // 多只发亮的小眼睛聚在前端
+      ctx.fillStyle = '#fca5a5';
+      for (const [ex, ey] of [[r * 0.55, -r * 0.22], [r * 0.65, 0], [r * 0.55, r * 0.22], [r * 0.3, -r * 0.1], [r * 0.3, r * 0.1]]) {
+        ctx.beginPath(); ctx.arc(ex, ey, r * 0.09, 0, Math.PI * 2); ctx.fill();
+      }
+      // 獠牙：攻击瞬间向两侧张开
+      ctx.strokeStyle = '#f5f5f5'; ctx.lineWidth = Math.max(1.5, r * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(r * 0.75, -r * 0.08); ctx.lineTo(r * (0.95 + pulse * 0.35), -r * (0.08 + pulse * 0.3));
+      ctx.moveTo(r * 0.75, r * 0.08); ctx.lineTo(r * (0.95 + pulse * 0.35), r * (0.08 + pulse * 0.3));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+  if (e.hp < e.maxHp || e.isSpawner) {
+    const w = e.r * 2, pct = Math.max(0, e.hp / e.maxHp);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w, 4);
+    ctx.fillStyle = '#4ade80'; ctx.fillRect(e.x - w / 2, e.y - e.r - 10, w * pct, 4);
+  }
+}
+
+function drawPlayer(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.fillStyle = p.hitFlash > 0 ? '#ef4444' : '#7dd3fc';
+  ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+  ctx.rotate(p.angle);
+  ctx.strokeStyle = '#f2f4f8'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(p.r * 0.6, 0); ctx.lineTo(p.r + 14, 0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawEffect(fx) {
+  const t = fx.t / fx.maxT;
+  ctx.save();
+  ctx.globalAlpha = 1 - t;
+  if (fx.kind === 'gib') { // 死亡碎屑：随飞散速度衰减并逐渐缩小的小颗粒
+    ctx.fillStyle = fx.color;
+    ctx.beginPath(); ctx.arc(fx.x, fx.y, Math.max(0, 3.2 * (1 - t)), 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.strokeStyle = fx.color; ctx.lineWidth = 2;
+    const r = fx.kind === 'explosion' ? 10 + t * 50 : 4 + t * 18;
+    ctx.beginPath(); ctx.arc(fx.x, fx.y, r, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---- HUD ----
+const hpFill = document.getElementById('hpFill'), hpText = document.getElementById('hpText');
+const weaponNameEl = document.getElementById('weaponName'), ammoTextEl = document.getElementById('ammoText');
+const moneyTextEl = document.getElementById('moneyText'), waveInfoEl = document.getElementById('waveInfo');
+const levelInfoEl = document.getElementById('levelInfo');
+function updateHUD(g) {
+  if (g.state !== 'playing') return;
+  levelInfoEl.textContent = '关卡 ' + (g.levelIndex + 1) + '/' + LEVELS.length + '：' + LEVELS[g.levelIndex].name;
+  hpFill.style.width = Math.max(0, g.player.hp / g.player.maxHp * 100) + '%';
+  hpText.textContent = Math.ceil(g.player.hp) + '/' + g.player.maxHp;
+  const wd = WEAPON_DEFS[g.currentWeapon];
+  weaponNameEl.textContent = wd.name;
+  ammoTextEl.textContent = wd.infinite ? '∞' : g.ammo[g.currentWeapon];
+  moneyTextEl.textContent = '$' + g.money;
+  const remain = g.enemies.filter(e => e.alive).length;
+  waveInfoEl.textContent = g.levelCleared ? '波次已清空，前往出口' : ('剩余威胁: ' + remain);
+}
+
+// ---- 覆层 ----
+const menuOverlay = document.getElementById('menuOverlay'), shopOverlay = document.getElementById('shopOverlay');
+const gameoverOverlay = document.getElementById('gameoverOverlay'), winOverlay = document.getElementById('winOverlay');
+const hud = document.getElementById('hud');
+
+function onStateChange(state) {
+  hud.hidden = state !== 'playing';
+  menuOverlay.hidden = state !== 'menu';
+  shopOverlay.hidden = state !== 'shop';
+  gameoverOverlay.hidden = state !== 'gameover';
+  winOverlay.hidden = state !== 'win';
+  if (state === 'shop') renderShop();
+  if (state === 'win') renderWin();
+}
+
+document.getElementById('startBtn').onclick = () => { ensureAudio(); game.loadLevel(0); };
+document.getElementById('retryBtn').onclick = () => { ensureAudio(); game.loadLevel(game.levelIndex); };
+document.getElementById('nextLevelBtn').onclick = () => { ensureAudio(); game.loadLevel(game.levelIndex + 1); };
+document.getElementById('restartBtn').onclick = () => { game = new Game(); };
+
+const shopList = document.getElementById('shopList'), shopMoney = document.getElementById('shopMoney');
+function renderShop() {
+  shopMoney.textContent = '$' + game.money;
+  shopList.innerHTML = '';
+  for (const wid of WEAPON_ORDER) {
+    if (wid === 'pistol') continue;
+    const wd = WEAPON_DEFS[wid];
+    const row = document.createElement('div');
+    row.className = 'shop-row';
+    if (!game.weapons[wid]) {
+      row.innerHTML = '<span>' + wd.name + ' <small>伤害' + wd.dmg + '</small></span>' +
+        '<button data-action="buy" data-id="' + wid + '"' + (game.money < wd.cost ? ' disabled' : '') + '>解锁 $' + wd.cost + '</button>';
+    } else {
+      const r = AMMO_REFILL[wid];
+      row.innerHTML = '<span>' + wd.name + ' 弹药: ' + game.ammo[wid] + '</span>' +
+        '<button data-action="ammo" data-id="' + wid + '"' + (game.money < r.cost ? ' disabled' : '') + '>+' + r.amount + '弹药 $' + r.cost + '</button>';
+    }
+    shopList.appendChild(row);
+  }
+}
+shopList.addEventListener('click', ev => {
+  const btn = ev.target.closest('button');
+  if (!btn) return;
+  const id = btn.dataset.id, action = btn.dataset.action;
+  if (action === 'buy') {
+    const wd = WEAPON_DEFS[id];
+    if (game.money >= wd.cost) { game.money -= wd.cost; game.weapons[id] = true; game.ammo[id] = wd.startAmmo; }
+  } else if (action === 'ammo') {
+    const r = AMMO_REFILL[id];
+    if (game.money >= r.cost) { game.money -= r.cost; game.ammo[id] += r.amount; }
+  }
+  renderShop();
+});
+
+const winStats = document.getElementById('winStats');
+function renderWin() {
+  const m = Math.floor(game.elapsed / 60), s = Math.floor(game.elapsed % 60);
+  winStats.textContent = '击杀 ' + game.killCount + ' 只怪物 · 用时 ' + m + '分' + String(s).padStart(2, '0') + '秒 · 资金 $' + game.money;
+}
+
+// ---- 主循环：固定步长逻辑更新 + requestAnimationFrame 渲染 ----
+const FIXED_DT = 1 / 60;
+let acc = 0, last = performance.now();
+function frame(now) {
+  let dt = (now - last) / 1000; last = now;
+  dt = Math.min(dt, 0.1);
+  acc += dt;
+  while (acc >= FIXED_DT) { game.update(FIXED_DT); acc -= FIXED_DT; }
+  screenShake = Math.max(0, screenShake - dt * 40);
+  render(game);
+  updateHUD(game);
+  processEvents(game);
+  if (game.state !== lastState) { onStateChange(game.state); lastState = game.state; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

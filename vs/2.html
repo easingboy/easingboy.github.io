@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>生物战争-2</title>
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="../games/shared/style.css" />
+<style>
+  :root { --accent: #7dd3fc; --text: #fff; --text-dim: #a0a5b8; --secondary: #0f3460; --side-a: #4ade80; --side-b: #f472b6; }
+  body { background: linear-gradient(180deg, #16213e, #1a1a2e 65%, #0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; overflow-x: hidden; }
+  [hidden] { display: none !important; }
+  button, a { touch-action: manipulation; }
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  button:disabled { cursor: default; }
+  .game-shell { width: min(100%, 1040px); margin: 0 auto; padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 10px; padding: 0 0 10px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; background: var(--secondary); border: 0; }
+  .heading { text-align: center; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: 4px; color: var(--gold); }
+  .subtitle { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+  .home-intro { text-align: center; margin: 10px 0 16px; }
+  .home-intro h2 { margin: 0 0 8px; font-size: 32px; color: var(--gold); }
+  .home-intro p { margin: 0; font-size: 14px; color: var(--text-dim); }
+  .faction-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 16px; }
+  .faction-card { padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); }
+  .faction-card.a { border-color: rgba(74,222,128,.35); }
+  .faction-card.b { border-color: rgba(244,114,182,.35); }
+  .faction-card h3 { margin: 0 0 6px; font-size: 13px; }
+  .faction-card.a h3 { color: var(--side-a); }
+  .faction-card.b h3 { color: var(--side-b); }
+  .faction-card p { margin: 0; font-size: 11.5px; line-height: 1.7; color: var(--text-dim); }
+  .dialog-footer { display: flex; justify-content: center; margin-top: 20px; }
+  .btn { min-height: 46px; min-width: 140px; border-radius: 23px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #08243b; font-weight: 600; }
+  .rules-card { margin-top: 4px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); font-size: 12px; line-height: 1.85; color: var(--text-dim); }
+  .rules-card h3 { margin: 0 0 6px; font-size: 13px; color: var(--gold); }
+  .rules-card p { margin: 0 0 6px; }
+  .rules-card p:last-child { margin-bottom: 0; }
+  .match-bar { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; }
+  .timer-pill { min-width: 92px; text-align: center; padding: 6px 16px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+  .board-wrap { position: relative; margin: 0 auto; width: min(100%, 980px); border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); overflow: hidden; }
+  canvas#board { display: block; width: 100%; height: auto; touch-action: manipulation; }
+  .hud { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .hud::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: linear-gradient(180deg, transparent, rgba(255,255,255,.16), transparent); transform: translateX(-0.5px); pointer-events: none; }
+  .side { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .side-b { align-items: stretch; }
+  .side-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  .side-a .side-label { color: var(--side-a); }
+  .side-b .side-label { color: var(--side-b); text-align: right; }
+  .res-row { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-dim); }
+  .side-b .res-row { flex-direction: row-reverse; }
+  .bar { position: relative; flex: 1; height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; transition: width .18s ease; }
+  .energy-bar .bar-fill { background: linear-gradient(90deg, #38bdf8, #7dd3fc); }
+  .base-bar .bar-fill.a { background: linear-gradient(90deg, #22c55e, var(--side-a)); }
+  .base-bar .bar-fill.b { background: linear-gradient(90deg, #db2777, var(--side-b)); }
+  .res-num { flex: none; min-width: 34px; text-align: center; font-variant-numeric: tabular-nums; }
+  .cards-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .card-btn { position: relative; height: 62px; padding: 4px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+  .card-btn .card-glyph { font-size: 11px; font-weight: 600; }
+  .card-btn .card-stat { font-size: 8.5px; color: #9aa4bb; letter-spacing: -.2px; font-variant-numeric: tabular-nums; }
+  .card-btn .card-sub { font-size: 8.5px; color: var(--gold); line-height: 1.1; min-height: 9px; }
+  .card-btn .card-cost { position: absolute; top: 2px; right: 4px; font-size: 10px; font-weight: 700; color: var(--gold); }
+  .card-btn[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.25) inset; }
+  .card-btn:disabled { opacity: .45; }
+  .side-a .card-btn:not(:disabled):active, .side-b .card-btn:not(:disabled):active { transform: scale(.95); }
+  .status-text { min-height: 15px; font-size: 10.5px; color: var(--text-dim); }
+  .side-b .status-text { text-align: right; }
+  dialog { width: min(460px, calc(100% - 32px)); padding: 22px; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; background: #16213e; color: #fff; max-height: 82vh; overflow: auto; }
+  dialog::backdrop { background: rgba(0,0,0,.84); }
+  dialog h2 { margin: 0 0 12px; font-size: 22px; color: var(--gold); }
+  dialog p { margin: 0; font-size: 13px; line-height: 1.75; color: #b7bdcc; }
+  #resultDialog { text-align: center; }
+  .card-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 6px; }
+  .card-table th, .card-table td { padding: 5px 6px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.08); color: #cfd4e2; }
+  .card-table th { color: var(--text-dim); font-weight: 600; }
+  .speed-ctrl { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-dim); }
+  .speed-ctrl input[type=range] { width: 100px; accent-color: var(--accent); cursor: pointer; }
+  .speed-label { min-width: 28px; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--accent); font-weight: 600; }
+  .setup-card { margin: 0 0 14px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); }
+  .setup-card h3 { margin: 0 0 8px; font-size: 13px; color: var(--gold); text-align: center; }
+  /* 模式/阵营/时长按钮。此前 .choice 完全没有定义样式，按钮用的是浏览器原生样式
+     （白底黑字，与深色页面格格不入），且 aria-pressed 也没有对应规则，所以点击后几乎看不出变化。
+     现在：未选中=深色半透明+灰字；选中=青蓝渐变+白字+发光+微放大，对比明显且与页面同色系。 */
+  .choices { display: flex; justify-content: center; gap: 8px; }
+  .choice { flex: 1; max-width: 92px; min-height: 46px; padding: 8px 4px; border: 1.5px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.04); color: rgba(242,244,248,.55); font-size: 14px; font-weight: 500; cursor: pointer; transition: transform .12s ease, background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease; }
+  .choice:hover:not([aria-pressed="true"]) { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.3); color: var(--text); }
+  .choice[aria-pressed="true"] { color: #fff; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #0369a1); border-color: #7dd3fc; box-shadow: 0 0 0 2px rgba(125,211,252,.22), 0 6px 16px rgba(3,105,161,.45); transform: scale(1.05); }
+  .choice:active { transform: scale(.96); }
+  .levels { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .level-btn { flex: 1; max-width: 88px; min-height: 54px; padding: 6px 2px; border-radius: 10px; border: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.04); color: var(--text-dim); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: transform .12s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  .level-btn b { font-size: 13px; color: var(--text); }
+  .level-btn small { font-size: 9px; }
+  /* 关卡按钮选中态改为与模式/时长一致的青蓝渐变（原来是接近白色的 --accent，偏亮且与深色页面不搭） */
+  .level-btn[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, #0ea5e9, #0369a1); border-color: #7dd3fc; box-shadow: 0 0 0 2px rgba(125,211,252,.22), 0 6px 16px rgba(3,105,161,.45); transform: scale(1.05); }
+  .level-btn[aria-pressed="true"] b { color: #fff; }
+  .level-btn:disabled { opacity: .35; }
+  .level-hint { min-height: 16px; margin: 6px 0 0; font-size: 11px; color: var(--text-dim); text-align: center; }
+  .ai-tag { margin-left: 6px; font-size: 10px; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--text-dim); }
+  @media (max-width: 360px) { .game-shell { padding-left: 10px; padding-right: 10px; } .card-btn { height: 56px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="game-header">
+    <a id="backLink" class="back-btn" href="../index.html" aria-label="返回网站首页">←</a>
+    <div class="heading"><h1>生物战争</h1><p class="subtitle">同屏双人 · 三路自动塔防对战</p></div>
+    <button id="helpBtn" class="help-btn" aria-label="游戏规则">?</button>
+  </header>
+  <section id="homeScreen" aria-label="开始对战">
+    <div class="home-intro"><h2>生 物 战 争</h2><p id="introSub">iPad 横屏 · 左右分屏 · 各自部署，10 分钟定胜负</p></div>
+    <div class="faction-preview">
+      <div class="faction-card a"><h3>A · 植物阵营</h3><p>擅长固定防线拖住敌人，向阳花/坚果墙/豌豆炮台守住入口，再用苗兵、荆棘战车、双孢射手伺机突破。</p></div>
+      <div class="faction-card b"><h3>B · 虫群阵营</h3><p>擅长机动突破，小虫群、甲壳虫、喷酸虫集中推进，爆破虫克制扎堆与坚果墙，跳跃虫专门跳过第一座建筑。</p></div>
+    </div>
+    <section class="setup-card" aria-label="模式选择">
+      <h3>选择模式</h3>
+      <div id="modeOptions" class="choices"></div>
+    </section>
+    <section class="setup-card" aria-label="对局时长">
+      <h3>对局时长</h3>
+      <div id="durationOptions" class="choices"></div>
+    </section>
+    <section id="onlineSetup" class="setup-card" hidden aria-label="联机设置">
+      <h3>房间</h3>
+      <p id="roomInfo" class="level-hint"></p>
+      <div class="dialog-footer" style="margin-top:10px"><button id="copyRoomBtn" class="btn">复制房间链接</button></div>
+      <p class="level-hint">把链接发给对手，双方进入同一房间即可对战（先到者为植物阵营）。</p>
+    </section>
+    <section id="soloSetup" class="setup-card" hidden aria-label="闯关设置">
+      <h3>选择阵营</h3>
+      <div id="factionOptions" class="choices"></div>
+      <h3 style="margin-top:14px">选择关卡</h3>
+      <div id="levelOptions" class="levels"></div>
+      <p id="levelHint" class="level-hint"></p>
+    </section>
+    <div class="dialog-footer"><button id="startBtn" class="btn primary">开始对战</button></div>
+    <section class="rules-card"><h3>核心规则</h3>
+      <p>棋盘 3 路 × 10 格，左 5 格属于 A、右 5 格属于 B，双方基地各 24 点生命。点击己方卡牌，再点击己方半区的一路（部署单位）或空格（部署建筑），单位会沿本路自动前进、遇敌自动战斗。</p>
+      <p>突破与攻城：单位攻入对方基地时只结算<b>一次"攻城伤害"</b>随即消失，不会持续输出；攻城数值与战斗伤害分开计算（例如爆破虫战斗伤害 23、攻城伤害只有 5）。因此摧毁基地需要多次成功突破，而不是靠单个单位速通。</p>
+      <p>双方各自独立的能量条：开局 5 点，此后每 3 秒 +1，上限 12。<span id="homeDuration">10 分钟</span>倒计时结束时若未摧毁基地，比较剩余血量，血量高者获胜，相同则平局。</p>
+    </section>
+    <section class="rules-card"><h3>单位说明</h3>
+      <table class="card-table">
+        <tr><th>A · 植物</th><th>费用</th><th>核心作用</th></tr>
+        <tr><td>向阳花</td><td>3</td><td>经济建筑；存活时定期产能（同时最多 3 座）</td></tr>
+        <tr><td>坚果墙</td><td>2</td><td>高生命、不攻击，阻挡一路</td></tr>
+        <tr><td>豌豆炮台</td><td>3</td><td>固定远程输出，守住入口</td></tr>
+        <tr><td>苗兵</td><td>2</td><td>低费快速推进，适合试探空路</td></tr>
+        <tr><td>荆棘战车</td><td>5</td><td>慢速、高生命，主力攻城</td></tr>
+        <tr><td>双孢射手</td><td>4</td><td>移动远程单位，攻击两个近邻目标并短暂减速（副目标伤害减半）</td></tr>
+      </table>
+      <table class="card-table">
+        <tr><th>B · 虫群</th><th>费用</th><th>核心作用</th></tr>
+        <tr><td>孵化巢</td><td>3</td><td>与向阳花同规则的经济建筑（同时最多 3 座）</td></tr>
+        <tr><td>小虫群</td><td>2</td><td>一次生成两只脆弱小虫，适合分散防线火力</td></tr>
+        <tr><td>甲壳虫</td><td>3</td><td>前排承伤，保护后方单位</td></tr>
+        <tr><td>喷酸虫</td><td>3</td><td>移动远程输出</td></tr>
+        <tr><td>爆破虫</td><td>4</td><td>接敌后自爆，克制扎堆单位和坚果墙</td></tr>
+        <tr><td>跳跃虫</td><td>5</td><td>每次部署可跳过第一个建筑，针对植物防线</td></tr>
+      </table>
+    </section>
+  </section>
+  <section id="playScreen" hidden aria-label="对战中">
+    <div class="match-bar">
+      <span id="timerText" class="timer-pill">10:00</span>
+      <span id="netStatus" class="level-hint" style="min-height:0;margin:0 6px"></span>
+      <label class="speed-ctrl" aria-label="游戏速度">
+        <span>速度</span>
+        <input id="speedSlider" type="range" min="0.1" max="5" step="0.1" value="1" />
+        <span id="speedLabel" class="speed-label">1×</span>
+      </label>
+    </div>
+    <div class="board-wrap"><canvas id="board" aria-label="对战棋盘"></canvas></div>
+    <div class="hud">
+      <div class="side side-a" aria-label="A方操作区">
+        <div id="sideLabelA" class="side-label">A · 植物</div>
+        <div class="res-row base-bar"><span>基地</span><div class="bar"><div id="baseBarA" class="bar-fill a" style="width:100%"></div></div><span id="baseNumA" class="res-num">24</span></div>
+        <div class="res-row energy-bar"><span>能量</span><div class="bar"><div id="energyBarA" class="bar-fill" style="width:41%"></div></div><span id="energyNumA" class="res-num">5</span></div>
+        <div id="cardsA" class="cards-grid"></div>
+        <p id="statusA" class="status-text">选择卡牌后点击己方半区部署</p>
+      </div>
+      <div class="side side-b" aria-label="B方操作区">
+        <div id="sideLabelB" class="side-label">B · 虫群</div>
+        <div class="res-row base-bar"><span id="baseNumB" class="res-num">24</span><div class="bar"><div id="baseBarB" class="bar-fill b" style="width:100%"></div></div><span>基地</span></div>
+        <div class="res-row energy-bar"><span id="energyNumB" class="res-num">5</span><div class="bar"><div id="energyBarB" class="bar-fill" style="width:41%"></div></div><span>能量</span></div>
+        <div id="cardsB" class="cards-grid"></div>
+        <p id="statusB" class="status-text">选择卡牌后点击己方半区部署</p>
+      </div>
+    </div>
+  </section>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">生物战争 · 规则与卡牌</h2>
+  <p>3 路 × 10 格棋盘，左 5 格是 A 的部署区，右 5 格是 B 的部署区，双方基地各 24 点生命，不会自动回血。点击己方卡牌再点击己方半区：移动单位选一路即可（从己方入口出发，自动前进/战斗）；建筑需点具体空格。<span id="dialogDuration">10 分钟</span>结束未分胜负则比较基地血量，血量高者获胜，相同为平局。</p>
+  <p>突破与攻城：单位攻入对方基地时只造成<b>一次"攻城伤害"</b>随后消失。攻城数值与战斗伤害分开（爆破虫战斗伤害 23、攻城伤害仅 5），棋子上显示为「⚔战斗伤害 ⌂攻城伤害」。所以打掉 24 点基地血需要多次成功突破，单个单位无法速通。</p>
+  <p>阻挡规则：只有<b>敌方</b>单位与建筑会挡住推进（坚果墙的价值就在于挡住敌人）。<b>己方</b>单位与建筑彼此不阻挡，可以互相穿过——自己种的向阳花、坚果墙不会堵死自己的进攻单位。</p>
+  <p>单机闯关：可选植物或虫群，AI 执另一方。AI 只是个"虚拟玩家"——走和玩家完全相同的部署接口，受同样的能量、冷却、半区与经济上限约束，不偷看隐藏信息；难度只体现在反应速度、决策准确率与预判距离上，第 6 关会额外获得 10% 能量恢复（会明示）。闯关进度保存在本机。</p>
+  <p>能量：双方各自独立，开局 5 点，每 3 秒 +1，上限 12。经济建筑（向阳花/孵化巢）造价 3，存活期间每 10 秒产 1 点、最多产 5 次，同时最多各保有 3 座。每种卡牌部署后有短暂冷却。</p>
+  <table class="card-table">
+    <tr><th>A · 植物</th><th>费用</th><th>核心作用</th></tr>
+    <tr><td>向阳花</td><td>3</td><td>经济建筑；存活时定期产能</td></tr>
+    <tr><td>坚果墙</td><td>2</td><td>高生命、不攻击，阻挡一路</td></tr>
+    <tr><td>豌豆炮台</td><td>3</td><td>固定远程输出，守住入口</td></tr>
+    <tr><td>苗兵</td><td>2</td><td>低费快速推进，适合试探空路</td></tr>
+    <tr><td>荆棘战车</td><td>5</td><td>慢速、高生命，主力攻城</td></tr>
+    <tr><td>双孢射手</td><td>4</td><td>移动远程单位，攻击两个近邻目标并短暂减速（副目标伤害减半）</td></tr>
+  </table>
+  <table class="card-table">
+    <tr><th>B · 虫群</th><th>费用</th><th>核心作用</th></tr>
+    <tr><td>孵化巢</td><td>3</td><td>与向阳花同规则的经济建筑</td></tr>
+    <tr><td>小虫群</td><td>2</td><td>一次生成两只脆弱小虫，适合分散防线火力</td></tr>
+    <tr><td>甲壳虫</td><td>3</td><td>前排承伤，保护后方单位</td></tr>
+    <tr><td>喷酸虫</td><td>3</td><td>移动远程输出</td></tr>
+    <tr><td>爆破虫</td><td>4</td><td>接敌后自爆，克制扎堆单位和坚果墙</td></tr>
+    <tr><td>跳跃虫</td><td>5</td><td>每次部署可跳过第一个建筑，针对植物防线</td></tr>
+  </table>
+  <div class="dialog-footer"><button id="closeRulesBtn" class="btn primary">知道了</button></div>
+</dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle">
+  <h2 id="resultTitle"></h2><p id="resultDetails"></p>
+  <div class="dialog-footer"><button id="resultRestartBtn" class="btn primary">再来一局</button><button id="resultNextBtn" class="btn primary" hidden>下一关</button><button id="resultMenuBtn" class="btn">返回主页</button></div>
+</dialog>
+<script id="vs-engine">
+const LANES = 3;
+const COLS = 10;
+const BASE_HP_MAX = 24;
+// 对局时长（秒）——公共变量：默认 10 分钟。首页可切换 3/5/10 分钟，引擎按开局时传入的时长判定结束。
+const MATCH_SECONDS = 600;
+const MATCH_DURATION_OPTIONS = [180, 300, 600]; // 可选的时长（3/5/10 分钟）
+const ENERGY_START = 5;
+const ENERGY_MAX = 12;
+const ENERGY_INTERVAL = 3;
+const ECONOMY_MAX_ALIVE = 3;
+const ECONOMY_INTERVAL = 10;
+const ECONOMY_TICKS = 5;
+const BLOCK_GAP = 0.32;
+const ENTER_EPS = 0.001;
+const OPPONENT = { A: 'B', B: 'A' };
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+const CARD_DEFS = {
+  // A · 植物：绿色系为主，用明度/色调区分
+  sunflower:    { id: 'sunflower',    name: '向阳花',   glyph: '向', color: '#facc15', faction: 'A', kind: 'building', cost: 3, hp: 30, cooldown: 1.1, economy: true },
+  nutwall:      { id: 'nutwall',      name: '坚果墙',   glyph: '坚', color: '#a3e635', faction: 'A', kind: 'building', cost: 2, hp: 68, cooldown: 0.8, damage: 0 }, // 70血时要4只爆破虫才炸得穿一个2费墙，"爆破虫克制坚果墙"名不副实；68血配合爆破虫23伤，3只(69伤)即可破墙。实测该值同时是第6关AI对称对局的胜负平衡点(64血时B方12:0全胜，68血时6:6)
+  peaturret:    { id: 'peaturret',    name: '豌豆炮台', glyph: '豌', color: '#4ade80', faction: 'A', kind: 'building', cost: 3, hp: 26, cooldown: 1.1, range: 2.4, damage: 4, atkInterval: 0.8 },
+  sprout:       { id: 'sprout',       name: '苗兵',     glyph: '苗', color: '#86efac', faction: 'A', kind: 'unit', cost: 2, hp: 16, speed: 1.4, range: 0.6, damage: 3, atkInterval: 0.6, cooldown: 0.8 },
+  thornchariot: { id: 'thornchariot', name: '荆棘战车', glyph: '荆', color: '#16a34a', faction: 'A', kind: 'unit', cost: 5, hp: 70, speed: 0.7, range: 0.6, damage: 7, siege: 10, atkInterval: 1.0, cooldown: 1.7 }, // 原伤害10/生命90时一对一打赢虫群全部单位，下调战斗力，攻城伤害保留10；后因0.5龟速导致穿越需20秒、攻城10难以兑现，提速到0.7并对冲减血10点
+  sporewalker:  { id: 'sporewalker',  name: '双孢射手', glyph: '双', color: '#2dd4bf', faction: 'A', kind: 'unit', cost: 4, hp: 34, speed: 0.8, range: 2.6, damage: 4, atkInterval: 1.1, cooldown: 1.4, splashCount: 2, splashFalloff: 0.5, slowFactor: 0.5, slowDuration: 1.5 }, // 副目标伤害减半：同时打两个不该等于两倍输出；射程3.0→2.6，与豌豆炮台3.4/喷酸虫3.0形成梯度；减速修复后杀伤区太强(爆破虫满血通关)，伤害5→4补偿，使爆破虫刚好能贴脸自爆
+  // B · 虫群：粉/紫/红色系
+  hatchery:     { id: 'hatchery',     name: '孵化巢',   glyph: '孵', color: '#c084fc', faction: 'B', kind: 'building', cost: 3, hp: 30, cooldown: 1.1, economy: true },
+  swarmlings:   { id: 'swarmlings',   name: '小虫群',   glyph: '小', color: '#f9a8d4', faction: 'B', kind: 'unit', cost: 2, hp: 8, speed: 1.5, range: 0.6, damage: 2, atkInterval: 0.8, cooldown: 0.8, count: 2 }, // 0.5间隔时两只合计8 DPS(性价比指数64)，远超同费镜像苗兵(40)；0.8后合计5.0与苗兵对齐，双体形态差异交给AOE克制
+  shellbug:     { id: 'shellbug',     name: '甲壳虫',   glyph: '甲', color: '#f472b6', faction: 'B', kind: 'unit', cost: 3, hp: 55, speed: 0.7, range: 0.6, damage: 4, atkInterval: 0.9, cooldown: 1.1 },
+  venombug:     { id: 'venombug',     name: '喷酸虫',   glyph: '喷', color: '#a855f7', faction: 'B', kind: 'unit', cost: 3, hp: 22, speed: 0.9, range: 3.0, damage: 4, atkInterval: 0.9, cooldown: 1.1 },
+  blastbug:     { id: 'blastbug',     name: '爆破虫',   glyph: '爆', color: '#f87171', faction: 'B', kind: 'unit', cost: 4, hp: 20, speed: 1.1, range: 0.6, damage: 23, siege: 5, atkInterval: 0.5, cooldown: 1.4, selfDestruct: true, splashRadius: 1.2 }, // 攻城3与2费苗兵同值属断层(5费跳跃虫7/荆棘战车10)；改5后约5次成功突破打掉24血基地，不会速通
+  jumpbug:      { id: 'jumpbug',      name: '跳跃虫',   glyph: '跳', color: '#fb923c', faction: 'B', kind: 'unit', cost: 5, hp: 40, speed: 1.0, range: 0.6, damage: 7, atkInterval: 0.9, cooldown: 1.7, jumpFirstBuilding: true }
+};
+const CARDS_BY_FACTION = {
+  A: ['sunflower', 'nutwall', 'peaturret', 'sprout', 'thornchariot', 'sporewalker'],
+  B: ['hatchery', 'swarmlings', 'shellbug', 'venombug', 'blastbug', 'jumpbug']
+};
+
+class VsGame {
+  constructor({ matchSeconds = MATCH_SECONDS } = {}) {
+    this.time = 0;
+    this.matchSeconds = matchSeconds; // 本局时长，开局时确定（默认取公共变量 MATCH_SECONDS）
+    this.finished = false;
+    this.winner = null;
+    this.entities = [];
+    // 开火记录，供 UI 绘制弹道。刻意与实体解耦：攻击者自爆或攻入基地后会立刻消失，
+    // 若把开火信息挂在实体上，这类攻击就永远画不出弹道。
+    this.tracers = [];
+    this.nextId = 1;
+    this.players = {
+      A: { energy: ENERGY_START, energyTimer: 0, baseHp: BASE_HP_MAX, cooldowns: {} },
+      B: { energy: ENERGY_START, energyTimer: 0, baseHp: BASE_HP_MAX, cooldowns: {} }
+    };
+  }
+  /** 剩余时间（秒），供 UI 显示倒计时 */
+  get remaining() { return Math.max(0, this.matchSeconds - this.time); }
+  cardsFor(player) { return CARDS_BY_FACTION[player].map(id => CARD_DEFS[id]); }
+  economyAliveCount(player) {
+    return this.entities.filter(e => e.alive && e.owner === player && e.economy).length;
+  }
+  canDeploy(player, cardId, lane, col) {
+    const def = CARD_DEFS[cardId];
+    if (!def || def.faction !== player) return { ok: false, reason: '非本方卡牌' };
+    if (this.finished) return { ok: false, reason: '对局已结束' };
+    if (!Number.isInteger(lane) || lane < 0 || lane >= LANES) return { ok: false, reason: '路数非法' };
+    const pl = this.players[player];
+    const cdUntil = pl.cooldowns[cardId] || 0;
+    if (this.time < cdUntil - 1e-9) return { ok: false, reason: '冷却中', cooldownRemaining: cdUntil - this.time };
+    if (pl.energy < def.cost) return { ok: false, reason: '能量不足', missing: +(def.cost - pl.energy).toFixed(2) };
+    if (def.economy && this.economyAliveCount(player) >= ECONOMY_MAX_ALIVE) return { ok: false, reason: '经济建筑已达上限' };
+    if (def.kind === 'building') {
+      if (!Number.isInteger(col)) return { ok: false, reason: '建筑必须指定格子' };
+      const [lo, hi] = player === 'A' ? [0, 4] : [5, 9];
+      if (col < lo || col > hi) return { ok: false, reason: '只能建造在己方半区' };
+      // 第 col 格占 [col, col+1]，中心是 col+0.5，建筑就落在中心上
+      const occupied = this.entities.some(e => e.alive && e.lane === lane && Math.abs(e.pos - (col + 0.5)) < BLOCK_GAP);
+      if (occupied) return { ok: false, reason: '该格已被占用' };
+    }
+    return { ok: true, def };
+  }
+  deploy(player, cardId, lane, col = null) {
+    const check = this.canDeploy(player, cardId, lane, col);
+    if (!check.ok) return check;
+    const def = check.def;
+    const pl = this.players[player];
+    pl.energy -= def.cost;
+    pl.cooldowns[cardId] = this.time + def.cooldown;
+    const dir = def.kind === 'building' ? 0 : (player === 'A' ? 1 : -1);
+    // 建筑落在格子中心 col+0.5；移动单位从己方基地门口进入格子区（A从0、B从COLS，两端对称）
+    const spawnPos = def.kind === 'building' ? col + 0.5 : (player === 'A' ? 0 : COLS);
+    const count = def.count || 1;
+    for (let i = 0; i < count; i++) {
+      this.entities.push({
+        id: this.nextId++, owner: player, cardId, kind: def.kind, lane,
+        pos: spawnPos + (def.kind === 'unit' ? -dir * i * 0.55 : 0),
+        hp: def.hp, maxHp: def.hp, dir, speed: def.speed || 0, range: def.range || 0, damage: def.damage || 0,
+        // 攻城伤害与战斗伤害分开：爆破虫战斗伤害22用于炸防线，但攻入基地只算3，否则一只就能打掉基地22/24
+        siege: def.siege !== undefined ? def.siege : (def.damage || 0),
+        atkInterval: def.atkInterval || 1, atkTimer: 0,
+        selfDestruct: !!def.selfDestruct, splashRadius: def.splashRadius || 0,
+        splashCount: def.splashCount || 1, splashFalloff: def.splashFalloff || 1, slowFactor: def.slowFactor || 1, slowDuration: def.slowDuration || 0,
+        jumpFirstBuilding: !!def.jumpFirstBuilding, jumpUsed: false, jumpSkipId: null,
+        economy: !!def.economy, economyTimer: 0, economyTicksLeft: def.economy ? ECONOMY_TICKS : 0,
+        slowUntil: 0, alive: true
+      });
+    }
+    return { ok: true };
+  }
+  damageBase(player, amount) {
+    const pl = this.players[player];
+    pl.baseHp = Math.max(0, pl.baseHp - amount);
+    if (pl.baseHp <= 0 && !this.finished) { this.finished = true; this.winner = OPPONENT[player]; }
+  }
+  applyDamage(target, amount) {
+    target.hp -= amount;
+    if (target.hp <= 0) { target.hp = 0; target.alive = false; }
+  }
+  performAttack(self, primaryTarget, enemiesAhead) {
+    if (self.atkTimer > 0) return;
+    // 记录本次开火，供 UI 绘制弹道特效，
+    // 避免远程单位停在射程边缘时看起来像"卡住不动"
+    this.tracers.push({ fromPos: self.pos, toPos: primaryTarget.pos, lane: self.lane, at: this.time });
+    if (self.selfDestruct) {
+      for (const e of enemiesAhead) {
+        if (Math.abs(e.pos - primaryTarget.pos) <= self.splashRadius) this.applyDamage(e, self.damage);
+      }
+      self.hp = 0; self.alive = false;
+      return;
+    }
+    let targets = [primaryTarget];
+    if (self.splashCount > 1) {
+      targets = enemiesAhead
+        .filter(e => Math.abs(e.pos - self.pos) <= self.range)
+        .sort((a, b) => Math.abs(a.pos - self.pos) - Math.abs(b.pos - self.pos))
+        .slice(0, self.splashCount);
+    }
+    // 主目标吃满伤，副目标按 splashFalloff 衰减：能同时打两个应该是约1.5倍收益，而不是2倍
+    targets.forEach((t, i) => {
+      const dmg = i === 0 ? self.damage : Math.max(1, Math.round(self.damage * (self.splashFalloff || 1)));
+      this.applyDamage(t, dmg);
+      if (self.slowDuration > 0) {
+        t.slowUntil = Math.max(t.slowUntil, this.time + self.slowDuration);
+        // 减速系数必须跟随攻击者：移动时读的是受害者自己的 slowFactor，
+        // 若不同步过来，slowFactor 取默认值 1，减速就永远只记时间不生效
+        t.slowFactor = self.slowFactor;
+      }
+    });
+    self.atkTimer = self.atkInterval;
+  }
+  tick(dt) {
+    if (this.finished) return;
+    this.time += dt;
+    for (const p of ['A', 'B']) {
+      const pl = this.players[p];
+      pl.energyTimer += dt * (pl.energyMult || 1); // energyMult 仅大师关 AI 使用（明示 +10%）
+      while (pl.energyTimer >= ENERGY_INTERVAL) { pl.energyTimer -= ENERGY_INTERVAL; pl.energy = Math.min(ENERGY_MAX, pl.energy + 1); }
+    }
+    for (const e of this.entities) {
+      if (!e.alive || !e.economy || e.economyTicksLeft <= 0) continue;
+      e.economyTimer += dt;
+      while (e.economyTimer >= ECONOMY_INTERVAL && e.economyTicksLeft > 0) {
+        e.economyTimer -= ECONOMY_INTERVAL; e.economyTicksLeft--;
+        const pl = this.players[e.owner];
+        pl.energy = Math.min(ENERGY_MAX, pl.energy + 1);
+      }
+    }
+    for (const self of this.entities) {
+      if (!self.alive) continue;
+      if (self.atkTimer > 0) self.atkTimer = Math.max(0, self.atkTimer - dt);
+      const laneMates = this.entities.filter(o => o !== self && o.alive && o.lane === self.lane);
+      const ahead = o => self.dir === 0 ? true : (o.pos - self.pos) * self.dir > -1e-6;
+      // 只有敌方实体会阻挡推进：己方单位与建筑彼此不阻挡，
+      // 否则自己种的向阳花/坚果墙会把自己后方的进攻单位堵死在半路。
+      let enemies = laneMates.filter(o => o.owner !== self.owner && ahead(o) && o.id !== self.jumpSkipId);
+      if (self.jumpFirstBuilding && !self.jumpUsed && enemies.length) {
+        const nearestOverall = enemies.reduce((a, b) => Math.abs(b.pos - self.pos) < Math.abs(a.pos - self.pos) ? b : a);
+        if (nearestOverall.kind === 'building') {
+          self.jumpUsed = true; self.jumpSkipId = nearestOverall.id;
+          enemies = enemies.filter(o => o.id !== nearestOverall.id);
+        }
+      }
+      const nearestEnemy = enemies.length ? enemies.reduce((a, b) => Math.abs(b.pos - self.pos) < Math.abs(a.pos - self.pos) ? b : a) : null;
+      const inRange = nearestEnemy && Math.abs(nearestEnemy.pos - self.pos) <= self.range;
+      // A 攻到 COLS(10) 即抵达 B 基地；B 攻到 0 即抵达 A 基地——两端对称（原来 B 是 -1，比 A 多走一格）
+      const atEdge = self.kind === 'unit' && ((self.dir > 0 && self.pos >= COLS - ENTER_EPS) || (self.dir < 0 && self.pos <= ENTER_EPS));
+      if (self.range > 0 && inRange) {
+        this.performAttack(self, nearestEnemy, enemies);
+      } else if (self.kind === 'unit' && atEdge) {
+        // 攻入对方基地只能造成一次伤害随即阵亡：否则单个单位就能持续输出、几秒内打光24点基地血，对局会草率结束
+        if (self.atkTimer <= 0 && self.siege > 0) {
+          this.damageBase(OPPONENT[self.owner], self.siege);
+          // 记录攻向基地的开火（目标位置取该方向的边界），同样用于绘制弹道
+          this.tracers.push({ fromPos: self.pos, toPos: self.dir > 0 ? COLS : 0, lane: self.lane, at: this.time });
+          self.hp = 0; self.alive = false;
+        }
+      } else if (self.kind === 'unit') {
+        const eff = self.speed * (this.time < self.slowUntil ? self.slowFactor : 1);
+        let next = self.pos + self.dir * eff * dt;
+        if (nearestEnemy) { // 只被前方最近的敌方实体卡住，己方可以互相穿过
+          const limit = nearestEnemy.pos - self.dir * BLOCK_GAP;
+          next = self.dir > 0 ? Math.min(next, limit) : Math.max(next, limit);
+        }
+        self.pos = clamp(next, -1, COLS);
+      }
+    }
+    this.entities = this.entities.filter(e => e.alive);
+    // 开火记录只保留最近3秒（游戏时间），避免无限增长
+    this.tracers = this.tracers.filter(t => this.time - t.at < 3);
+    // 用极小容差避免浮点数反复累加dt造成time"卡在结束时刻之前一点点"、永远触发不了结束判定
+    if (!this.finished && this.time >= this.matchSeconds - 1e-6) {
+      this.finished = true;
+      const a = this.players.A.baseHp, b = this.players.B.baseHp;
+      this.winner = a === b ? 'draw' : (a > b ? 'A' : 'B');
+    }
+  }
+  snapshot() {
+    return {
+      time: this.time, remaining: this.remaining,
+      finished: this.finished, winner: this.winner,
+      players: { A: { ...this.players.A, cooldowns: { ...this.players.A.cooldowns } }, B: { ...this.players.B, cooldowns: { ...this.players.B.cooldowns } } },
+      entities: this.entities.map(e => ({ ...e }))
+    };
+  }
+}
+
+/* ==================== 单机闯关 AI ====================
+ * AI 是一个"虚拟玩家"：只通过与人相同的 game.deploy() 出牌，受同样的能量/冷却/半区/经济上限约束，不读取隐藏信息。
+ * 每隔 think 秒做一次决策，按优先级：紧急防守 > 经济 > 进攻 > 能量防溢出 > 攒能量。
+ * 各关卡只是参数与风格不同（见 AI_LEVELS），决策框架共用一套。
+ */
+const AI_LEVELS = [
+  // 6 关共用同一套战略骨架（批量模拟选出的最强打法：前期经济 → 攒够 attackAt 点发起 wave 张牌的一波 → 守备维持 upkeep）。
+  // 难度只由四项"技能参数"递进：思考间隔 think ↓、选最优概率 optimal ↑、开始应对的距离 react ↑、预演时长 horizon ↑。
+  // 风格（龟缩/急攻/经济流/佯攻）只轻微调味——此前让各关风格差异过大，结果互相克制，难度不再递增。
+  { level: 1, name: '新手',   desc: '反应慢、看得近，出牌还很随意',
+    think: 2.5, optimal: 0.35, react: 3,    horizon: 6,  ecoMax: 1, ecoUntil: 60, attackAt: 8, wave: 2, upkeep: 4, style: 'basic' },
+  { level: 2, name: '龟缩',   desc: '专心加固防线，进攻比较保守',
+    think: 1.8, optimal: 0.55, react: 5,    horizon: 9,  ecoMax: 3, ecoUntil: 70, attackAt: 8, wave: 2, upkeep: 10, style: 'turtle' },
+  { level: 3, name: '急攻',   desc: '盯着一路猛推，考验补防',
+    think: 1.3, optimal: 0.7,  react: 6.5,  horizon: 12, ecoMax: 3, ecoUntil: 70, attackAt: 8, wave: 2, upkeep: 8, style: 'rush' },
+  { level: 4, name: '经济流', desc: '前期贪经济，后期大举进攻',
+    think: 0.9, optimal: 0.85, react: 8,    horizon: 14, ecoMax: 3, ecoUntil: 70, attackAt: 8, wave: 2, upkeep: 6, style: 'economy' },
+  { level: 5, name: '均衡',   desc: '熟练运用克制关系，三路兼顾',
+    think: 0.7, optimal: 0.93, react: 9,    horizon: 16, ecoMax: 3, ecoUntil: 70, attackAt: 8, wave: 2, upkeep: 6, style: 'balanced' },
+  { level: 6, name: '大师',   desc: '会佯攻，能量恢复 +10%',
+    think: 0.5, optimal: 1,    react: 10,   horizon: 18, ecoMax: 3, ecoUntil: 70, attackAt: 8, wave: 2, upkeep: 6, style: 'master', energyMult: 1.1 }
+];
+// 克制关系不手写，由引擎模拟一对一对决自动测算（见 aiDuelTable）：
+// 手写表曾出现多条与实测相反的判断（如"爆破虫克制荆棘战车"实测净收益为 -14），且调数值后会悄悄失效。
+/**
+ * 防守对决：进攻方单位从自己基地出发，走到中线时防守方部署应对牌（一张或两张组合；建筑放在己方第3/第6格），
+ * 返回防守方的净收益：击杀进攻方 +其费用，己方防守牌阵亡 -其费用，进攻方攻入基地再 -攻城伤害。
+ * 对照基准：什么都不出 = -攻城伤害。
+ */
+function aiDuel(defSide, defCards, atkCard) {
+  const atkSide = OPPONENT[defSide];
+  const g = new VsGame();
+  g.players.A.energy = 99; g.players.B.energy = 99;
+  g.deploy(atkSide, atkCard, 0, null);
+  const dist = e => defSide === 'A' ? e.pos : COLS - e.pos;
+  for (let i = 0; i < 400; i++) { const e = g.entities.find(x => x.owner === atkSide); if (!e || dist(e) <= COLS / 2) break; g.tick(0.05); }
+  const buildCols = defSide === 'A' ? [3, 1] : [6, 8];
+  let cost = 0;
+  defCards.forEach((id, i) => {
+    const d = CARD_DEFS[id];
+    g.deploy(defSide, id, 0, d.kind === 'building' ? buildCols[i] : null);
+    cost += d.cost;
+  });
+  const base = g.players[defSide].baseHp;
+  for (let i = 0; i < 1600 && !g.finished; i++) { g.tick(0.05); if (!g.entities.some(x => x.owner === atkSide)) break; }
+  const leak = base - g.players[defSide].baseHp;
+  let v = -leak;
+  if (!g.entities.some(x => x.owner === atkSide) && !leak) v += CARD_DEFS[atkCard].cost;
+  // 防守牌按剩余血量比例折算损失（打赢了但残血，也算付出了一部分代价）
+  const alive = g.entities.filter(x => x.owner === defSide);
+  const maxHp = defCards.reduce((s, id) => s + CARD_DEFS[id].hp * (CARD_DEFS[id].count || 1), 0);
+  v -= cost * (1 - alive.reduce((s, e) => s + e.hp, 0) / maxHp);
+  return +v.toFixed(2);
+}
+let AI_DUEL_CACHE = null;
+/**
+ * DUEL[防守方][方案][来犯单位] = 净收益。方案为单张牌或两张不同牌的组合（如 "shellbug+venombug"）。
+ * 只在首次创建 AI 时计算一次并缓存（约百毫秒内）。
+ */
+function aiDuelTable() {
+  if (AI_DUEL_CACHE) return AI_DUEL_CACHE;
+  const table = { A: {}, B: {} };
+  for (const side of ['A', 'B']) {
+    const atks = CARDS_BY_FACTION[OPPONENT[side]].filter(id => CARD_DEFS[id].kind === 'unit');
+    const defs = CARDS_BY_FACTION[side].filter(id => !CARD_DEFS[id].economy);
+    const options = defs.map(d => [d]);
+    for (let i = 0; i < defs.length; i++) for (let j = i + 1; j < defs.length; j++) options.push([defs[i], defs[j]]);
+    for (const opt of options) {
+      const key = opt.join('+');
+      table[side][key] = { cards: opt, cost: opt.reduce((s, id) => s + CARD_DEFS[id].cost, 0), vs: {} };
+      for (const a of atks) table[side][key].vs[a] = aiDuel(side, opt, a);
+    }
+  }
+  return (AI_DUEL_CACHE = table);
+}
+// 建筑候选格（按优先顺序）：坚果墙靠前、炮台在墙后（射程3.4正好覆盖墙前）、经济建筑放最后排
+const AI_BUILD_COLS = {
+  A: { nutwall: [3, 4, 2], peaturret: [1, 2, 0], sunflower: [0, 1, 2] },
+  B: { hatchery: [9, 8, 7] }
+};
+
+class VsAI {
+  constructor(game, side, level = 1, random = Math.random) {
+    this.game = game; this.side = side; this.opp = OPPONENT[side];
+    this.cfg = AI_LEVELS[clamp(level, 1, AI_LEVELS.length) - 1];
+    this.random = random;
+    this.timer = this.cfg.think * 0.5;
+    this.focusLane = Math.floor(random() * LANES); // 急攻：整局只打这一路
+    this.log = [];                                // 出牌记录，便于测试与复盘
+    this.duel = aiDuelTable();
+    if (this.cfg.energyMult) game.players[side].energyMult = this.cfg.energyMult;
+  }
+  update(dt) {
+    if (this.game.finished) return;
+    this.timer += dt;
+    if (this.timer >= this.cfg.think) { this.timer = 0; this.think(); }
+  }
+  // 单个实体的"战力"，按兰彻斯特式 √(生命×每秒输出) 估算：
+  // 只看"生命+输出"会严重高估小虫群这类脆皮（一刀一只），导致 AI 拿它们去挡荆棘战车、能量白送。
+  power(e) {
+    let dps = e.selfDestruct ? e.damage / 3 : (e.damage * (e.splashCount || 1)) / (e.atkInterval || 1);
+    if (dps <= 0) dps = 2;             // 坚果墙不攻击，但能挡路，按一点"等效输出"计
+    let p = Math.sqrt(e.hp * dps);
+    if (e.range >= 3) p *= 1.3;        // 远程能在对方够不着时先手输出
+    return p;
+  }
+  // 实体到"我方基地"的距离（A 基地在 0，B 基地在 COLS）
+  distToMyBase(e) { return this.side === 'A' ? e.pos : COLS - e.pos; }
+  analyzeLane(lane) {
+    const info = { lane, threat: 0, rawThreat: 0, defense: 0, enemyDefense: 0, nearest: Infinity, enemyUnits: [], enemyBuildings: [], myUnits: 0 };
+    for (const e of this.game.entities) {
+      if (!e.alive || e.lane !== lane) continue;
+      const p = this.power(e);
+      if (e.owner === this.opp) {
+        info.enemyDefense += e.kind === 'building' ? p * 1.3 : p;
+        if (e.kind === 'unit') {
+          const d = this.distToMyBase(e);
+          info.threat += p * (1 + (COLS - d) / COLS); // 越靠近我方基地越危险
+          info.rawThreat += p;
+          info.nearest = Math.min(info.nearest, d);
+          info.enemyUnits.push(e.cardId);
+        } else info.enemyBuildings.push(e.cardId);
+      } else {
+        info.defense += p;
+        if (e.kind === 'unit') info.myUnits += p;
+      }
+    }
+    return info;
+  }
+  myCards() { return CARDS_BY_FACTION[this.side].map(id => CARD_DEFS[id]); }
+  // 建筑需要一个"在敌人前方"的空格：敌人已经走过的格子放建筑毫无意义
+  buildCol(cardId, laneInfo, taken = []) {
+    const cols = (AI_BUILD_COLS[this.side] || {})[cardId];
+    if (!cols) return null;
+    for (const col of cols) {
+      if (taken.includes(col)) continue;
+      const d = this.side === 'A' ? col + 0.5 : COLS - (col + 0.5);
+      if (laneInfo && laneInfo.nearest !== Infinity && d >= laneInfo.nearest - 0.3) continue;
+      if (this.game.canDeploy(this.side, cardId, laneInfo.lane, col).ok) return col;
+    }
+    return null;
+  }
+  tryDeploy(choice, lane, reason) {
+    const r = this.game.deploy(this.side, choice.id, lane, choice.col === undefined ? null : choice.col);
+    if (r.ok) this.log.push({ t: +this.game.time.toFixed(2), card: choice.id, lane, col: choice.col, reason });
+    return r.ok;
+  }
+  // 某个方案（1~2张牌）现在能不能出：每张牌都不在冷却、建筑有合适空格；能量是否足够单独标记
+  optionStatus(cards, info) {
+    const cols = [];
+    let cost = 0;
+    for (const id of cards) {
+      const def = CARD_DEFS[id];
+      let col = null;
+      if (def.kind === 'building') { col = this.buildCol(id, info, cols); if (col === null) return null; }
+      const check = this.game.canDeploy(this.side, id, info.lane, col);
+      if (!check.ok && check.reason !== '能量不足') return null;
+      cols.push(col); cost += def.cost;
+    }
+    return { cols, cost, affordable: this.game.players[this.side].energy >= cost };
+  }
+  /**
+   * 预演：复制这条路的当前局面，部署候选牌后快进 horizon 秒，返回结局评分。
+   * 组合进攻、站位、减速、跳跃等因素都由引擎自然算入，比查表可靠（查表按单兵种相加，面对组合会严重失真）。
+   * 评分 = 击杀敌方单位的费用 − 己方新部署牌的损失（按血量比例） − 2×我方基地被攻城伤害 + 对敌方基地造成的攻城伤害
+   */
+  simulate(lane, cards = [], cols = []) {
+    const sim = new VsGame();
+    sim.entities = this.game.entities.filter(e => e.alive && e.lane === lane).map(e => ({ ...e }));
+    sim.nextId = this.game.nextId + 1000;
+    sim.players.A.energy = sim.players.B.energy = 99;
+    const enemyIds = new Map(sim.entities.filter(e => e.owner === this.opp && e.kind === 'unit')
+      .map(e => [e.id, CARD_DEFS[e.cardId].cost / (CARD_DEFS[e.cardId].count || 1)]));
+    const firstNew = sim.nextId;
+    let spent = 0;
+    cards.forEach((id, i) => { if (sim.deploy(this.side, id, lane, cols[i] === undefined ? null : cols[i]).ok) spent += CARD_DEFS[id].cost; });
+    const newMaxHp = sim.entities.filter(e => e.id >= firstNew).reduce((s, e) => s + e.maxHp, 0);
+    for (let t = 0; t < this.cfg.horizon && !sim.finished; t += 0.2) sim.tick(0.2);
+    const alive = new Set(sim.entities.map(e => e.id));
+    let killed = 0;
+    for (const [id, cost] of enemyIds) if (!alive.has(id)) killed += cost;
+    const leak = BASE_HP_MAX - sim.players[this.side].baseHp;
+    const dealt = BASE_HP_MAX - sim.players[this.opp].baseHp;
+    const newHpLeft = sim.entities.filter(e => e.id >= firstNew).reduce((s, e) => s + e.hp, 0);
+    const lost = newMaxHp ? spent * (1 - newHpLeft / newMaxHp) : 0;
+    return { value: killed - lost - 2 * leak + dealt, leak, dealt, spent };
+  }
+  // 候选方案：单张牌，以及两张不同牌的组合
+  options(filter) {
+    const cards = CARDS_BY_FACTION[this.side].filter(id => !CARD_DEFS[id].economy && filter(CARD_DEFS[id]));
+    const opts = cards.map(c => [c]);
+    for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) opts.push([cards[i], cards[j]]);
+    return opts;
+  }
+  // 按预演结果挑方案；以 optimal 概率选最优，否则在"比什么都不做更好"的方案里随机（低难度"手滑"）
+  choose(info, cards, baseline) {
+    const cands = [];
+    for (const opt of cards) {
+      const st = this.optionStatus(opt, info);
+      if (!st) continue;
+      const r = this.simulate(info.lane, opt, st.cols);
+      const score = r.value - st.cost * 0.15; // 同样结局下更省能量的方案更好
+      if (score <= baseline + 0.5) continue;
+      cands.push({ opt, cols: st.cols, cost: st.cost, affordable: st.affordable, score });
+    }
+    if (!cands.length) return {};
+    cands.sort((a, b) => b.score - a.score);
+    const best = cands[0], energy = this.game.players[this.side].energy;
+    // 最优方案差一点能量、敌人还没到：先攒着，别拿次优方案把能量打散
+    if (!best.affordable && info.nearest > 2.5 && best.cost - energy <= 3 && this.random() < this.cfg.optimal) return { wait: true };
+    const ok = cands.filter(c => c.affordable);
+    if (!ok.length) return {};
+    return this.random() < this.cfg.optimal ? ok[0] : ok[Math.floor(this.random() * ok.length)];
+  }
+  deployOption(choice, lane, reason) {
+    let any = false;
+    choice.opt.forEach((id, i) => { if (this.tryDeploy({ id, col: choice.cols[i] === null ? undefined : choice.cols[i] }, lane, reason)) any = true; });
+    return any;
+  }
+  defend(info, baseline) {
+    const c = this.choose(info, this.options(() => true), baseline.value);
+    if (c.wait) return true;             // 本轮决策已处理（攒能量），阻止后面的经济/进攻把能量花掉
+    return c.opt ? this.deployOption(c, info.lane, 'defend') : false;
+  }
+  // 主动补防（没有来犯单位时）：按对决表选"应对对方所有兵种平均最划算"的单张牌
+  fortify(info) {
+    const singles = Object.values(this.duel[this.side]).filter(o => o.cards.length === 1)
+      .map(o => ({ o, avg: Object.values(o.vs).reduce((s, v) => s + v, 0) / Object.keys(o.vs).length }))
+      .sort((a, b) => b.avg - a.avg);
+    for (const { o, avg } of singles) {
+      if (avg <= 0) break;
+      const st = this.optionStatus(o.cards, info);
+      if (st && st.affordable) return this.deployOption({ opt: o.cards, cols: st.cols }, info.lane, 'fortify');
+    }
+    return false;
+  }
+  economy(lanes) {
+    const eco = this.myCards().find(d => d.economy);
+    if (!eco || this.game.economyAliveCount(this.side) >= Math.min(this.cfg.ecoMax, ECONOMY_MAX_ALIVE)) return false;
+    if (this.game.time > this.cfg.ecoUntil) return false;
+    const safest = lanes.slice().sort((a, b) => a.threat - b.threat)[0];
+    if (safest.nearest < 6) return false;
+    const col = this.buildCol(eco.id, safest);
+    if (col === null) return false;
+    return this.tryDeploy({ id: eco.id, col }, safest.lane, 'economy');
+  }
+  // 进攻：对每一路（急攻只看锁定的一路）预演所有可出的进攻组合，挑结局最好的一路一组
+  attack(lanes) {
+    const candidates = this.cfg.style === 'rush' ? [lanes[this.focusLane]] : lanes;
+    const unitOpts = this.options(d => d.kind === 'unit').filter(o => o.length <= this.cfg.wave);
+    let best = null;
+    for (const info of candidates) {
+      const base = this.simulate(info.lane).value;
+      const c = this.choose({ ...info, nearest: Infinity }, unitOpts, base);
+      if (c.opt && (!best || c.score > best.c.score)) best = { c, lane: info.lane };
+    }
+    if (!best) return false;
+    // 大师佯攻：主攻之前先用一个低费快兵压另一路，牵制对方把能量花在错误的路上
+    if (this.cfg.style === 'master') {
+      const cheap = this.side === 'A' ? 'sprout' : 'swarmlings';
+      const others = lanes.filter(l => l.lane !== best.lane);
+      const feint = others[Math.floor(this.random() * others.length)];
+      if (!best.c.opt.includes(cheap) && this.game.players[this.side].energy >= best.c.cost + CARD_DEFS[cheap].cost
+        && this.game.canDeploy(this.side, cheap, feint.lane, null).ok) this.tryDeploy({ id: cheap }, feint.lane, 'feint');
+    }
+    return this.deployOption(best.c, best.lane, 'attack');
+  }
+  think() {
+    const g = this.game, pl = g.players[this.side];
+    const lanes = [0, 1, 2].map(l => this.analyzeLane(l));
+    // 1. 防守：敌人进入反应距离，且预演"什么都不做"会被攻城 → 选预演结局最好的应对方案
+    const threats = lanes.filter(l => l.enemyUnits.length && l.nearest <= this.cfg.react)
+      .map(l => ({ l, base: this.simulate(l.lane) })).filter(x => x.base.leak > 0)
+      .sort((a, b) => b.base.leak - a.base.leak);
+    for (const t of threats) if (this.defend(t.l, t.base)) return;
+    // 主动补防：没有威胁时也给守备低于 upkeep 的最弱一路补防线
+    if (this.cfg.upkeep > 0) {
+      const weakest = lanes.slice().sort((a, b) => a.defense - b.defense)[0];
+      if (!weakest.enemyUnits.length && weakest.defense < this.cfg.upkeep && pl.energy >= 5 && this.fortify(weakest)) return;
+    }
+    // 2. 经济
+    if (this.economy(lanes)) return;
+    // 3. 进攻（龟缩不主动进攻；经济流前60秒只攒经济）
+    const threshold = this.cfg.style === 'economy' && g.time < 60 ? Infinity : this.cfg.attackAt;
+    if (pl.energy >= threshold && this.attack(lanes)) return;
+    // 4. 防溢出：能量快满时必须花掉（龟缩只加固防线）
+    if (pl.energy >= ENERGY_MAX - 1) {
+      if (this.attack(lanes)) return;
+      this.fortify(lanes.slice().sort((a, b) => a.defense - b.defense)[0]);
+    }
+  }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const canvas = $('board'), ctx = canvas.getContext('2d');
+  let game = null, ai = null, dpr = 1, rafId = 0, lastTs = 0, speedMult = 1;
+  let mode = 'pvp', playerFaction = 'A', level = 1, cleared = 0;
+  let matchSeconds = MATCH_SECONDS; // 本局时长（秒），默认取公共变量，可在首页切换
+  // 联机对战：服务器跑权威模拟，客户端只发送部署意图并渲染服务器广播回来的状态
+  let ws = null, mySide = null, netConnected = false, opponentPresent = false;
+  let roomCode = new URLSearchParams(location.search).get('room') || '';
+  const selectedCard = { A: null, B: null };
+  const statusMsg = { A: '选择卡牌后点击己方半区部署', B: '选择卡牌后点击己方半区部署' };
+  // 坐标轴向右为 pos：-1~0 是 A 基地，0~COLS 是 10 个格子（第 col 格占 [col,col+1]，中心 col+0.5），
+  // COLS~COLS+1 是 B 基地。总跨度 12，这样两侧基地各占 1 格宽、中间正好 10 个格子。
+  const AXIS_MIN = -1, AXIS_MAX = COLS + 1, AXIS_SPAN = AXIS_MAX - AXIS_MIN; // 12
+  const TRACER_MS = 550; // 弹道特效按真实时间显示的时长（不受速度倍率影响）
+
+  function fmtTime(sec) {
+    const s = Math.max(0, Math.ceil(sec));
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }
+  function fitSize() {
+    dpr = window.devicePixelRatio || 1;
+    const wrap = document.querySelector('.board-wrap');
+    const width = Math.max(280, wrap.clientWidth);
+    const height = width * (LANES / AXIS_SPAN);
+    canvas.style.width = Math.round(width) + 'px';
+    canvas.style.height = Math.round(height) + 'px';
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  function screenX(pos, width) { return (pos - AXIS_MIN) / AXIS_SPAN * width; }
+  function screenY(lane, height) { return (lane + 0.5) / LANES * height; }
+
+  function draw() {
+    const width = canvas.clientWidth, height = canvas.clientHeight;
+    ctx.clearRect(0, 0, width, height);
+    if (!game) return;
+    const laneH = height / LANES;
+    for (let l = 0; l < LANES; l++) {
+      ctx.fillStyle = l % 2 === 0 ? 'rgba(255,255,255,.03)' : 'rgba(255,255,255,.015)';
+      ctx.fillRect(0, l * laneH, width, laneH);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
+    for (let c = 0; c <= COLS; c++) {
+      const x = screenX(c, width);
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    const baseAX = screenX(0, width), baseBX = screenX(COLS, width);
+    ctx.fillStyle = 'rgba(74,222,128,.14)'; ctx.fillRect(0, 0, baseAX, height);
+    ctx.fillStyle = 'rgba(244,114,182,.14)'; ctx.fillRect(baseBX, 0, width - baseBX, height);
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
+    const midX = screenX(COLS / 2, width); // 分界线在 col4 与 col5 之间（即画布正中），把10格平分左右各5格
+    ctx.beginPath(); ctx.moveTo(midX, 0); ctx.lineTo(midX, height); ctx.stroke();
+    ctx.setLineDash([]);
+    if (selectedCard.A || selectedCard.B) {
+      if (selectedCard.A) { ctx.fillStyle = 'rgba(74,222,128,.10)'; ctx.fillRect(0, 0, midX, height); }
+      if (selectedCard.B) { ctx.fillStyle = 'rgba(244,114,182,.10)'; ctx.fillRect(midX, 0, width - midX, height); }
+    }
+    // 棋子适度缩小（0.34→0.30），为上下留出余量：所有文字都收进棋子内部，
+    // 外部只保留紧贴顶边的一条薄血条，这样相邻两路的棋子信息就不会互相重叠。
+    const r = Math.min(laneH * 0.30, width / AXIS_SPAN * 0.38);
+    // 字号随格距缩放，最小7px保证可读
+    const fontSize = Math.max(7, Math.round(r * 0.52));
+    const innerFont = Math.max(6, Math.round(r * 0.33));
+    const hpFont = Math.max(6, Math.round(r * 0.38));
+    const compact = r < 14; // 棋子过小时只显示首字，避免内部文字糊成一团
+    for (const e of game.entities) {
+      const x = screenX(renderPos(e), width), y = screenY(e.lane, height);
+      const def = CARD_DEFS[e.cardId];
+      const color = def ? def.color : (e.owner === 'A' ? '#4ade80' : '#f472b6');
+      // 主体形状
+      ctx.beginPath();
+      if (e.kind === 'building') { const s = r * 1.05; ctx.rect(x - s, y - s, s * 2, s * 2); } else { ctx.arc(x, y, r, 0, Math.PI * 2); }
+      ctx.fillStyle = color; ctx.globalAlpha = 0.88; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1; ctx.stroke();
+      // 血条：唯一留在棋子外部的元素，紧贴顶边且很薄（3px），不会侵入上一路
+      const ratio = clamp(e.hp / e.maxHp, 0, 1);
+      const barW = r * 1.8, barY = y - r - 4;
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(x - barW / 2, barY, barW, 3);
+      ctx.fillStyle = ratio > 0.4 ? '#4ade80' : '#ef4444'; ctx.fillRect(x - barW / 2, barY, barW * ratio, 3);
+      // 以下文字全部绘制在棋子内部（深色，与亮色棋子形成对比）
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // 内部上方：名称首字
+      ctx.font = `bold ${fontSize}px system-ui,sans-serif`;
+      ctx.fillStyle = '#000';
+      ctx.fillText(def ? def.name[0] : e.cardId[0], x, compact ? y : y - r * 0.38);
+      if (!compact) {
+        // 内部中部：主要数值（单位=伤害+速度，攻击建筑=伤害，经济建筑=产能，纯阻挡建筑留空）
+        const siege = def && def.siege !== undefined ? def.siege : (def ? def.damage : 0);
+        const statText = e.kind === 'unit'
+          ? `⚔${def ? def.damage : 0}▶${def && def.speed ? def.speed.toFixed(1) : '—'}` + (def && def.siege !== undefined && def.siege !== def.damage ? ` ⌂${def.siege}` : '')
+          : (def && def.damage ? `⚔${def.damage}` : (def && def.economy ? '⚡' : ''));
+        if (statText) {
+          ctx.font = `${innerFont}px system-ui,sans-serif`;
+          ctx.fillStyle = 'rgba(0,0,0,.75)';
+          ctx.fillText(statText, x, y + r * 0.10);
+        }
+        // 内部下方：当前血量
+        ctx.font = `bold ${hpFont}px system-ui,sans-serif`;
+        ctx.fillStyle = 'rgba(0,0,0,.85)';
+        ctx.fillText(`♥${Math.ceil(e.hp)}`, x, y + r * 0.55);
+      }
+    }
+    // 开火弹道：画在所有棋子之上（不会被覆盖），并按【真实时间】显示固定时长
+    // ——若按游戏时间计时，玩家把速度倍率调高后弹道会一闪而过甚至看不见。
+    // 由于开火记录独立于实体，攻击者自爆/攻入基地消失后弹道依然能完整播放。
+    const nowMs = performance.now();
+    for (const t of game.tracers) {
+      if (t._seenAt === undefined) t._seenAt = nowMs; // 首次见到该记录时开始按真实时间计时
+      const ageMs = nowMs - t._seenAt;
+      if (ageMs >= TRACER_MS) continue;
+      const alpha = 1 - ageMs / TRACER_MS;
+      const fx = screenX(t.fromPos, width), fy = screenY(t.lane, height);
+      const tx = screenX(t.toPos, width), ty = screenY(t.lane, height);
+      ctx.strokeStyle = `rgba(253,224,71,${(alpha * 0.95).toFixed(3)})`;
+      ctx.lineWidth = Math.max(2, r * 0.16);
+      ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+      // 枪口闪光
+      ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.9).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(fx, fy, r * 0.28, 0, Math.PI * 2); ctx.fill();
+      // 弹着点闪光
+      ctx.fillStyle = `rgba(253,224,71,${(alpha * 0.75).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(tx, ty, r * 0.34, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  function renderHud() {
+    if (!game) return;
+    const human = mode === 'solo' ? playerFaction : null;
+    const aiSide = mode === 'solo' ? OPPONENT[playerFaction] : null;
+    if (mode === 'online') {
+      const me = mySide === 'A' ? 'sideLabelA' : 'sideLabelB';
+      const opp = mySide === 'A' ? 'sideLabelB' : 'sideLabelA';
+      void me; void opp;
+    }
+    $('sideLabelA').innerHTML = mode === 'solo' && aiSide === 'A'
+      ? `A · 植物<span class="ai-tag">AI 第${level}关 ${AI_LEVELS[level - 1].name}</span>` : 'A · 植物';
+    $('sideLabelB').innerHTML = mode === 'solo' && aiSide === 'B'
+      ? `<span class="ai-tag">AI 第${level}关 ${AI_LEVELS[level - 1].name}</span>B · 虫群` : 'B · 虫群';
+    // 联机：在上述赋值之后再标注"你/对手"，否则会被上面的默认文案覆盖
+    if (mode === 'online' && mySide) {
+      if (mySide === 'A') {
+        $('sideLabelA').innerHTML = 'A · 植物<span class="ai-tag">你</span>';
+        $('sideLabelB').innerHTML = '<span class="ai-tag">对手</span>B · 虫群';
+      } else {
+        $('sideLabelA').innerHTML = 'A · 植物<span class="ai-tag">对手</span>';
+        $('sideLabelB').innerHTML = '<span class="ai-tag">你</span>B · 虫群';
+      }
+    }
+    $('timerText').textContent = fmtTime(game.remaining);
+    for (const p of ['A', 'B']) {
+      const pl = game.players[p];
+      $(`energyBar${p}`).style.width = `${(pl.energy / ENERGY_MAX) * 100}%`;
+      $(`energyNum${p}`).textContent = pl.energy;
+      $(`baseBar${p}`).style.width = `${(pl.baseHp / BASE_HP_MAX) * 100}%`;
+      $(`baseNum${p}`).textContent = pl.baseHp;
+      $(`status${p}`).textContent = statusMsg[p];
+      renderCards(p);
+    }
+  }
+  function renderCards(player) {
+    const wrap = $(`cards${player}`);
+    const pl = game.players[player];
+    for (const def of game.cardsFor(player)) {
+      let btn = wrap.querySelector(`[data-card="${def.id}"]`);
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.className = 'card-btn'; btn.dataset.card = def.id;
+        // 卡牌内小字固定显示关键属性值（生命/伤害/速度），便于双方在对局中随时对照
+        const stat = def.kind === 'unit'
+          ? `♥${def.hp} ⚔${def.damage} ▶${def.speed.toFixed(1)}`
+          : (def.damage ? `♥${def.hp} ⚔${def.damage}` : `♥${def.hp}${def.economy ? ' ⚡产能' : ''}`);
+        btn.innerHTML = `<span class="card-cost">${def.cost}</span><span class="card-glyph">${def.name}</span><span class="card-stat">${stat}</span><span class="card-sub"></span>`;
+        btn.title = `${def.name} · 费用${def.cost}${def.economy ? ` · 同时最多${ECONOMY_MAX_ALIVE}座` : ''}`;
+        btn.addEventListener('click', () => onCardTap(player, def.id));
+        wrap.appendChild(btn);
+      }
+      const cdRemain = (pl.cooldowns[def.id] || 0) - game.time;
+      const missing = def.cost - pl.energy;
+      // 经济建筑有"同时最多N座"的上限，达上限时直接置灰并标注，
+      // 否则玩家只有在点击棋盘后才知道建不了（冷却/能量不足都有提前提示，唯独这个没有）
+      const ecoFull = def.economy && game.economyAliveCount(player) >= ECONOMY_MAX_ALIVE;
+      const sub = btn.querySelector('.card-sub');
+      let disabled = false;
+      if (ecoFull) { sub.textContent = `已满${game.economyAliveCount(player)}/${ECONOMY_MAX_ALIVE}`; disabled = true; }
+      // 冷却/能量不足时把状态提示覆盖显示（此时这是最关键的信息），否则留空由属性值常驻展示
+      else if (cdRemain > 0.05) { sub.textContent = `冷却 ${cdRemain.toFixed(1)}s`; disabled = true; }
+      else if (missing > 0) { sub.textContent = `差${missing}点`; disabled = true; }
+      else { sub.textContent = ''; disabled = false; }
+      // 闯关时 AI 那一侧的卡牌只读：不能点，但仍显示能量/冷却，方便玩家观察 AI 在做什么
+      btn.disabled = disabled || game.finished
+        || (mode === 'solo' && player !== playerFaction)
+        || (mode === 'online' && player !== mySide); // 联机：只能操作服务器分配给自己的阵营
+      btn.setAttribute('aria-pressed', String(selectedCard[player] === def.id));
+    }
+  }
+  function onCardTap(player, cardId) {
+    if (!game || game.finished) return;
+    if (mode === 'solo' && player !== playerFaction) return; // AI 侧的卡牌不可操作
+    if (mode === 'online' && player !== mySide) return;      // 联机：不能操作对手阵营的卡牌
+    selectedCard[player] = selectedCard[player] === cardId ? null : cardId;
+    statusMsg[player] = selectedCard[player] ? `已选择「${CARD_DEFS[cardId].name}」，点击己方区域部署` : '选择卡牌后点击己方半区部署';
+    renderHud(); draw();
+  }
+  function handleBoardTap(clientX, clientY) {
+    if (!game || game.finished) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const relX = clamp((clientX - rect.left) / rect.width, 0, 1);
+    const relY = clamp((clientY - rect.top) / rect.height, 0, 1);
+    const player = relX < 0.5 ? 'A' : 'B';
+    const cardId = selectedCard[player];
+    if (!cardId) return;
+    const lane = clamp(Math.floor(relY * LANES), 0, LANES - 1);
+    const def = CARD_DEFS[cardId];
+    if (mode === 'online') {
+      // 联机：不本地执行，交给服务器权威判定（能量/冷却/格子占用都以服务器为准）
+      if (player !== mySide) { selectedCard[player] = null; renderHud(); draw(); return; }
+      let col = null;
+      if (def.kind === 'building') {
+        const posAxis = relX * AXIS_SPAN + AXIS_MIN;
+        col = Math.floor(clamp(posAxis, 0, COLS - 1));
+      }
+      netSend({ type: 'deploy', cardId, lane, col });
+      selectedCard[player] = null;
+      statusMsg[player] = '已发送，等待服务器确认';
+      renderHud(); draw();
+      return;
+    }
+    let result;
+    if (def.kind === 'building') {
+      const posAxis = relX * AXIS_SPAN + AXIS_MIN;
+      const col = Math.floor(clamp(posAxis, 0, COLS - 1)); // 格子是 [col,col+1] 区间，故向下取整
+      result = game.deploy(player, cardId, lane, col);
+    } else {
+      result = game.deploy(player, cardId, lane, null);
+    }
+    statusMsg[player] = result.ok ? '部署成功' : (result.reason || '部署失败');
+    selectedCard[player] = null;
+    renderHud(); draw();
+  }
+  canvas.addEventListener('click', event => {
+    const rect = canvas.getBoundingClientRect();
+    handleBoardTap(rect.left + (event.clientX - rect.left), rect.top + (event.clientY - rect.top));
+  });
+  function loop(ts) {
+    if (!game) return;
+    if (mode === 'online') { draw(); rafId = requestAnimationFrame(loop); return; } // 联机：服务器权威，本地只渲染
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min(0.1, (ts - lastTs) / 1000) * speedMult;
+    lastTs = ts;
+    if (ai) ai.update(dt);
+    game.tick(dt);
+    renderHud(); draw();
+    if (game.finished) { finish(); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+  function loadProgress() {
+    try { cleared = Number(localStorage.getItem('vsCleared' + playerFaction) || 0); } catch (e) { cleared = 0; }
+    if (mode === 'solo' && level > cleared + 1) level = cleared + 1;
+  }
+  function start() {
+    if (mode === 'online') { startOnline(); return; }
+    game = new VsGame({ matchSeconds });
+    ai = null;
+    if (mode === 'solo') {
+      const aiSide = OPPONENT[playerFaction];
+      // AI 就是一个"虚拟玩家"：走同样的 deploy 接口，受同样的能量/冷却/半区限制
+      ai = new VsAI(game, aiSide, level);
+    }
+    selectedCard.A = null; selectedCard.B = null;
+    statusMsg.A = '选择卡牌后点击己方半区部署'; statusMsg.B = '选择卡牌后点击己方半区部署';
+    $('homeScreen').hidden = true; $('playScreen').hidden = false;
+    $('cardsA').replaceChildren(); $('cardsB').replaceChildren();
+    fitSize(); renderHud(); draw();
+    lastTs = 0; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(loop);
+  }
+  // ===== 联机对战 =====
+  // 服务器持有唯一的对局并广播状态快照；本地不跑规则，只发意图 + 渲染。
+  // 这样双方看到的单位位置/血量/基地血量必然一致，不会因为帧率或延迟不同而发散。
+  function wsUrl() {
+    // 支持用 ?ws= 覆盖（本地联调时指向本机端口），生产环境走反代路径 /vs-ws/
+    const override = new URLSearchParams(location.search).get('ws');
+    if (override) return override;
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${proto}://${location.host}/vs-ws/`;
+  }
+  function netSend(obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
+  function netStatus(text) { const el = $('netStatus'); if (el) el.textContent = text; }
+  const tracerSeen = new Map(); // 服务器每次广播的 tracer 都是新对象，用它按开火事件缓存首次出现时间，保证淡出正常
+  // ---- 联机渲染插值 ----
+  // 服务器以 20Hz（每 50ms）广播一次状态快照，而本地用 requestAnimationFrame 以 ~60fps 重绘。
+  // 如果直接照抄最新位置，单位就是每 50ms 跳一格（20fps 观感），看起来"卡卡的"。
+  // 这里保留最近两帧快照，渲染时在两者之间按时间线性插值；并故意让渲染时钟落后
+  // INTERP_DELAY_MS（约两个广播间隔），保证"下一帧"几乎总是已经到达，即使网络抖动
+  // 也不会出现回退或跳变（最坏情况只是短暂停在最后已知位置）。
+  const INTERP_DELAY_MS = 100;
+  const SNAP_KEEP = 24;               // 保留最近约 1.2 秒的快照，足够覆盖插值所需的落后量
+  const snaps = [];                   // [{t: 本地到达时刻, m: Map(id->pos)}]，按时间升序
+  function resetInterp() { snaps.length = 0; }
+  function pushSnapshot(st) {
+    const m = new Map();
+    for (const e of st.entities) m.set(e.id, e.pos);
+    snaps.push({ t: performance.now(), m });
+    while (snaps.length > SNAP_KEEP) snaps.shift();
+  }
+  function renderPos(e) {
+    if (mode !== 'online' || snaps.length < 2) return e.pos;
+    const r = performance.now() - INTERP_DELAY_MS; // 渲染时钟：故意落后，保证区间内总有数据
+    if (r < snaps[0].t) return e.pos;              // 缓冲还没攒够（刚开局）：直接用最新位置
+    let a = null, b = null;
+    for (let i = snaps.length - 1; i > 0; i--) {
+      if (snaps[i - 1].t <= r && r <= snaps[i].t) { a = snaps[i - 1]; b = snaps[i]; break; }
+    }
+    if (!a) { a = snaps[snaps.length - 2]; b = snaps[snaps.length - 1]; } // 新帧迟到：沿用最后一段
+    const pa = a.m.get(e.id), pb = b.m.get(e.id);
+    // 刚部署（旧帧里没有）或刚阵亡：直接用最新位置，避免从错误位置飞过来
+    if (pa === undefined || pb === undefined) return e.pos;
+    const span = b.t - a.t;
+    const alpha = span <= 0 ? 1 : clamp((r - a.t) / span, 0, 1);
+    return pa + (pb - pa) * alpha;
+  }
+
+  function applyState(st) {
+    game.time = st.time; game.matchSeconds = st.matchSeconds;
+    game.finished = st.finished; game.winner = st.winner;
+    for (const side of ['A', 'B']) {
+      game.players[side].energy = st.players[side].energy;
+      game.players[side].baseHp = st.players[side].baseHp;
+      game.players[side].cooldowns = st.players[side].cooldowns || {};
+    }
+    pushSnapshot(st);
+    game.entities = st.entities.map(e => ({ ...e }));
+    const now = performance.now();
+    game.tracers = st.tracers.map(t => {
+      const key = `${t.at}|${t.fromPos}|${t.toPos}|${t.lane}`;
+      if (!tracerSeen.has(key)) tracerSeen.set(key, now);
+      return { ...t, _seenAt: tracerSeen.get(key) };
+    });
+    if (tracerSeen.size > 300) tracerSeen.clear();
+  }
+  function handleNet(msg) {
+    if (msg.type === 'joined') {
+      mySide = msg.side; netConnected = true; opponentPresent = !!msg.opponentPresent;
+      matchSeconds = msg.matchSeconds || matchSeconds;
+      netStatus(opponentPresent ? `已连接 · 你是${mySide === 'A' ? '植物' : '虫群'}阵营` : '已连接 · 等待对手加入…');
+      renderHud(); draw();
+    } else if (msg.type === 'state') {
+      applyState(msg);
+      renderHud(); draw();
+      if (game.finished) finish();
+    } else if (msg.type === 'opponent_joined') {
+      opponentPresent = true; netStatus(`对手已加入 · 你是${mySide === 'A' ? '植物' : '虫群'}阵营`); renderHud();
+    } else if (msg.type === 'opponent_left') {
+      opponentPresent = false; netStatus('对手已离开，对局已暂停'); renderHud();
+    } else if (msg.type === 'reject') {
+      if (mySide) statusMsg[mySide] = msg.reason || '部署失败';
+      renderHud(); draw();
+    } else if (msg.type === 'full') {
+      alert('房间已满（已有两位玩家），请更换房间链接'); backToHome();
+    }
+  }
+  function connectWS() {
+    ws = new WebSocket(wsUrl());
+    ws.onopen = () => { netSend({ type: 'join', room: roomCode, matchSeconds }); };
+    ws.onmessage = (ev) => { try { handleNet(JSON.parse(ev.data)); } catch (e) {} };
+    ws.onclose = () => { netConnected = false; opponentPresent = false; netStatus('连接已断开'); };
+    ws.onerror = () => {};
+  }
+  function startOnline() {
+    game = new VsGame({ matchSeconds }); // 占位，真正的状态由服务器广播填充
+    ai = null; mySide = null; resetInterp();
+    selectedCard.A = null; selectedCard.B = null;
+    statusMsg.A = '等待服务器'; statusMsg.B = '等待服务器';
+    $('homeScreen').hidden = true; $('playScreen').hidden = false;
+    $('cardsA').replaceChildren(); $('cardsB').replaceChildren();
+    fitSize(); renderHud(); draw();
+    netStatus('连接中…');
+    connectWS();
+    lastTs = 0; cancelAnimationFrame(rafId); rafId = requestAnimationFrame(loop);
+  }
+  function finish() {
+    const { A, B } = game.players;
+    const won = game.winner === playerFaction;
+    const title = game.winner === 'draw' ? '平局！' : `${game.winner === 'A' ? 'A · 植物阵营' : 'B · 虫群阵营'} 获胜！`;
+    $('resultTitle').textContent = title;
+    $('resultDetails').textContent = `A 基地 ${A.baseHp}/${BASE_HP_MAX} · B 基地 ${B.baseHp}/${BASE_HP_MAX}`;
+    const isSolo = mode === 'solo';
+    if (mode === 'online') {
+      $('resultNextBtn').hidden = true;
+      $('resultRestartBtn').hidden = false;
+      if (!$('resultDialog').open) $('resultDialog').showModal();
+      return;
+    }
+    let advanced = false;
+    if (isSolo && won) {
+      advanced = level < AI_LEVELS.length;
+      if (level > cleared) { cleared = level; try { localStorage.setItem('vsCleared' + playerFaction, String(cleared)); } catch (e) {} }
+    }
+    $('resultNextBtn').hidden = !isSolo;
+    $('resultNextBtn').textContent = advanced ? `下一关（第${level + 1}关）` : '返回选关';
+    $('resultRestartBtn').hidden = isSolo;
+    if (!$('resultDialog').open) $('resultDialog').showModal();
+  }
+  function renderSetup() {
+    $('soloSetup').hidden = mode !== 'solo';
+    $('onlineSetup').hidden = mode !== 'online';
+    if (mode === 'online') {
+      if (!roomCode) {
+        roomCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const params = new URLSearchParams(location.search);
+        params.set('room', roomCode);
+        window.history.replaceState(null, '', location.pathname + '?' + params.toString());
+      }
+      $('roomInfo').textContent = `房间号 ${roomCode}`;
+    }
+    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    document.querySelectorAll('[data-faction]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.faction === playerFaction)));
+    document.querySelectorAll('[data-level]').forEach(b => {
+      const n = Number(b.dataset.level);
+      b.setAttribute('aria-pressed', String(n === level));
+      b.disabled = n > cleared + 1;      // 通关后解锁下一关
+      b.querySelector('small').textContent = n > cleared + 1 ? '未解锁' : AI_LEVELS[n - 1].desc;
+    });
+    $('levelHint').textContent = mode === 'solo'
+      ? `已通关 ${cleared}/${AI_LEVELS.length} 关 · AI：${AI_LEVELS[level - 1].name}（${AI_LEVELS[level - 1].desc}）`
+      : '';
+    $('startBtn').textContent = mode === 'solo' ? `开始第${level}关` : mode === 'online' ? '进入房间' : '开始对战';
+    // 时长相关文案统一跟随所选时长，避免文案与实际对局时长不一致
+    document.querySelectorAll('[data-duration]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.duration) === matchSeconds)));
+    const durText = durationText(matchSeconds);
+    $('introSub').textContent = `iPad 横屏 · 左右分屏 · 各自部署，${durText}定胜负`;
+    $('homeDuration').textContent = durText;
+    $('dialogDuration').textContent = durText;
+  }
+  function durationText(sec) { return sec % 60 === 0 ? `${sec / 60} 分钟` : `${sec} 秒`; }
+  $('copyRoomBtn').addEventListener('click', () => {
+    const link = location.origin + location.pathname + '?room=' + roomCode;
+    const done = () => { $('roomInfo').textContent = `房间号 ${roomCode} · 链接已复制`; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(done, () => { window.prompt('复制此链接给对手', link); });
+    } else window.prompt('复制此链接给对手', link);
+  });
+  for (const [id, label] of [['pvp', '双人对战'], ['solo', '单机闯关'], ['online', '联网对战']]) {
+    const b = document.createElement('button');
+    b.className = 'choice'; b.dataset.mode = id; b.textContent = label;
+    b.addEventListener('click', () => { mode = id; loadProgress(); renderSetup(); });
+    $('modeOptions').appendChild(b);
+  }
+  for (const sec of MATCH_DURATION_OPTIONS) {
+    const b = document.createElement('button');
+    b.className = 'choice'; b.dataset.duration = sec; b.textContent = durationText(sec);
+    b.addEventListener('click', () => { matchSeconds = sec; renderSetup(); });
+    $('durationOptions').appendChild(b);
+  }
+  for (const [id, label] of [['A', '植物阵营'], ['B', '虫群阵营']]) {
+    const b = document.createElement('button');
+    b.className = 'choice'; b.dataset.faction = id; b.textContent = label;
+    b.addEventListener('click', () => { playerFaction = id; loadProgress(); renderSetup(); });
+    $('factionOptions').appendChild(b);
+  }
+  for (const cfg of AI_LEVELS) {
+    const b = document.createElement('button');
+    b.className = 'level-btn'; b.dataset.level = cfg.level;
+    b.innerHTML = `<b>第${cfg.level}关</b><small></small>`;
+    b.addEventListener('click', () => { level = cfg.level; renderSetup(); });
+    $('levelOptions').appendChild(b);
+  }
+  function backToHome() {
+    cancelAnimationFrame(rafId); rafId = 0; game = null; ai = null;
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    mySide = null; netConnected = false; opponentPresent = false;
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    $('homeScreen').hidden = false; $('playScreen').hidden = true;
+    loadProgress(); renderSetup();
+  }
+  $('resultNextBtn').addEventListener('click', () => {
+    $('resultDialog').close();
+    if (level < AI_LEVELS.length && game && game.winner === playerFaction) { level++; start(); }
+    else { backToHome(); }
+  });
+  $('startBtn').addEventListener('click', start);
+  $('speedSlider').addEventListener('input', () => {
+    speedMult = parseFloat($('speedSlider').value);
+    $('speedLabel').textContent = `${speedMult % 1 === 0 ? speedMult : speedMult.toFixed(1)}×`;
+  });
+  $('resultRestartBtn').addEventListener('click', () => {
+    $('resultDialog').close();
+    if (mode === 'online') { netSend({ type: 'restart' }); selectedCard.A = null; selectedCard.B = null; statusMsg.A = '已请求重开'; statusMsg.B = '已请求重开'; renderHud(); draw(); }
+    else start();
+  });
+  $('resultMenuBtn').addEventListener('click', () => { $('resultDialog').close(); backToHome(); });
+  $('helpBtn').addEventListener('click', () => { if (!$('rulesDialog').open) $('rulesDialog').showModal(); });
+  $('closeRulesBtn').addEventListener('click', () => $('rulesDialog').close());
+  $('backLink').addEventListener('click', event => { if (game) { event.preventDefault(); backToHome(); } });
+  window.addEventListener('resize', () => { if (game) fitSize(); });
+  window.vsTest = {
+    getGame: () => game,
+    getAI: () => ai,
+    net: () => ({ mode, mySide, netConnected, opponentPresent, roomCode }),
+    start,
+    setup: { setMode: m => { mode = m; loadProgress(); renderSetup(); },
+             setFaction: f => { playerFaction = f; loadProgress(); renderSetup(); },
+             setLevel: l => { level = l; renderSetup(); },
+             get: () => ({ mode, playerFaction, level, cleared }) },
+    selectCard: (player, cardId) => onCardTap(player, cardId),
+    tapRatio: (relX, relY) => {
+      const rect = canvas.getBoundingClientRect();
+      handleBoardTap(rect.left + relX * rect.width, rect.top + relY * rect.height);
+    },
+    snapshot: () => game && {
+      time: game.time, remaining: game.remaining, matchSeconds: game.matchSeconds, finished: game.finished, winner: game.winner,
+      baseHpA: game.players.A.baseHp, baseHpB: game.players.B.baseHp,
+      energyA: game.players.A.energy, energyB: game.players.B.energy,
+      entityCount: game.entities.length, selected: { ...selectedCard }
+    },
+    // 测试钩子：返回当前"实际画到画布上"的位置（联机模式下是插值后的位置），
+    // 用于验证单位移动是否逐帧连续，而不是每 50ms 跳一格。
+    renderPositions: () => (game ? game.entities.map(e => ({ id: e.id, pos: renderPos(e), raw: e.pos })) : [])
+  };
+  loadProgress(); renderSetup(); fitSize(); // 首屏初始化：模式/阵营/关卡/时长选项的选中态与画布尺寸
+})();
+</script>
+</body>
+</html>

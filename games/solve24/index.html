@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>求解24</title>
+<link rel="stylesheet" href="../shared/style.css" />
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<style>
+  :root { --accent: #e94560; --text: #fff; --text-dim: #a0a5b8; --warning: #ffc107; --secondary: #0f3460; }
+  body { background: linear-gradient(180deg, #0f0f1a, #1a1a2e 30%, #1a1a2e 70%, #0f0f1a); background-attachment: fixed; animation: none; min-height: 100svh; }
+  button { font: inherit; touch-action: manipulation; }
+  a { touch-action: manipulation; }
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .solver-shell { width: min(100%, 440px); margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .game-header { display: grid; grid-template-columns: 40px minmax(0,1fr) 40px; gap: 12px; padding: 0 0 20px; }
+  .game-header .back-btn, .game-header .help-btn { width: 40px; height: 40px; padding: 0; border: 0; background: var(--secondary); }
+  .game-header .title { margin: 0; font-size: 24px; color: var(--gold); letter-spacing: 2px; }
+  .number-slots { display: grid; grid-template-columns: repeat(4,minmax(0,65px)); justify-content: center; gap: 12px; }
+  .number-slot { min-width: 0; width: 100%; aspect-ratio: 1; border: 2px solid rgba(255,255,255,.1); border-radius: 12px; background: #16213e; color: #fff; font-size: 30px; font-weight: 600; cursor: pointer; padding: 0; }
+  .number-slot[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+  .number-slot:hover, .key:hover:not(:disabled) { filter: brightness(1.15); }
+  .number-slot:active, .key:active:not(:disabled) { transform: scale(.96); }
+  .message { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1.5; text-align: center; color: var(--text-dim); margin: 4px 0 8px; }
+  .message.error { color: #fb7185; }
+  .result-panel { height: clamp(150px, calc(100svh - 400px), 320px); background: #16213e; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+  .result-header { flex: none; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .result-header h2 { font-size: 15px; color: var(--gold); font-weight: 600; margin: 0; }
+  .result-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #4b5875 transparent; padding: 4px 0; }
+  .result-placeholder { display: flex; align-items: center; justify-content: center; min-height: 100%; margin: 0; padding: 12px; text-align: center; font-size: 13px; line-height: 1.8; color: var(--text-dim); }
+  .result-placeholder.error { color: #fb7185; }
+  .solution-row { display: grid; grid-template-columns: 22px minmax(0,1fr); column-gap: 6px; padding: 6px 14px; align-items: baseline; font-size: 15px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+  .solution-row + .solution-row { border-top: 1px solid rgba(255,255,255,.03); }
+  .solution-no { font-size: 12px; color: var(--text-dim); }
+  .solution-expression { overflow-wrap: anywhere; }
+  .result-count { flex: none; min-height: 32px; line-height: 1.5; padding: 7px 10px; margin: 0; text-align: center; color: var(--text-dim); font-size: 12px; border-top: 1px solid rgba(255,255,255,.07); }
+  .keypad { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px 8px; margin-top: 12px; }
+  .key { height: 50px; min-width: 0; border: 1px solid rgba(255,255,255,.06); border-radius: 12px; background: var(--secondary); color: #fff; font-size: 22px; font-weight: 600; padding: 0; cursor: pointer; }
+  .key.wide-label { font-size: 20px; }
+  .key.delete { background: var(--warning); color: #202033; }
+  .key.calculate { background: var(--accent); font-size: 16px; }
+  .key:disabled { opacity: .55; cursor: default; }
+  dialog { width: min(400px,calc(100% - 32px)); max-height: calc(100svh - 40px); padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,.15); background: #16213e; color: #fff; }
+  dialog::backdrop { background: rgba(0,0,0,.82); }
+  dialog h2 { margin: 0 0 18px; font-size: 22px; color: var(--accent); }
+  dialog p, dialog li { font-size: 14px; line-height: 1.8; color: #b7bdcc; }
+  dialog ol { padding-left: 20px; }
+  .sound-option { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; color: var(--text-dim); }
+  .sound-option input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .dialog-footer { margin-top: 16px; text-align: center; }
+  .btn.primary { min-height: 44px; border-radius: 22px; background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #f05a73; border-color: #f05a73; }
+  @media (max-width: 360px) { .solution-row { padding-left: 10px; padding-right: 10px; font-size: 14px; } .keypad { column-gap: 6px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="solver-shell">
+  <header class="game-header">
+    <a class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+    <h1 class="title">求解24</h1>
+    <button class="help-btn" id="helpBtn" aria-label="使用说明">?</button>
+  </header>
+  <section class="number-slots" id="numberSlots" aria-label="选择要编辑的数字槽"></section>
+  <p class="message" id="message" role="status">输入4个数字，点击计算查看解法</p>
+  <section class="result-panel" id="resultPanel" aria-labelledby="resultTitle" aria-busy="false">
+    <header class="result-header"><h2 id="resultTitle">计算方案</h2></header>
+    <div class="result-list" id="resultList" tabindex="0" aria-label="计算方案，可上下滚动"><p class="result-placeholder">从下方键盘输入1–13<br>然后点击「计算」查看答案</p></div>
+    <p class="result-count" id="resultCount" aria-live="polite">最多展示10种去重解法</p>
+  </section>
+  <div class="keypad" id="keypad" aria-label="1至13数字键盘"></div>
+</main>
+<dialog id="rulesDialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">使用说明</h2>
+  <p>这是一个24点解法查询工具，不计分、不限时。</p>
+  <ol><li>点上方卡片选择位置，用下方键盘输入1–13，数字可以重复。</li><li>10、11、12、13各有独立按键。每输入一次自动选下一槽，填到第四槽后回到第一槽。</li><li>点「计算」查询解法，每个输入数字使用且只使用一次，允许分数中间结果。</li></ol>
+  <p>删除键先删除当前槽；当前槽为空时，向左回绕寻找并删除最近的数字。修改数字后需重新计算。</p>
+  <p>结果按与微信版相同的规则去除部分交换律、结合律重复，最多展示10种，不代表所有数学上不同的解法。可上下滚动查看，* 为乘、/ 为除。</p>
+  <label class="sound-option"><input id="soundEnabled" type="checkbox" checked>操作音效</label>
+  <div class="dialog-footer"><button class="btn primary" id="closeRulesBtn">知道了</button></div>
+</dialog>
+<script src="../shared/utils.js"></script>
+<script id="solve24-engine">
+class Solve24Input {
+  constructor() { this.numbers = [null,null,null,null]; this.editing = 0; }
+  select(index) {
+    if (!Number.isInteger(index) || index < 0 || index > 3) return false;
+    this.editing = index;
+    return true;
+  }
+  enter(number) {
+    if (!Number.isInteger(number) || number < 1 || number > 13) return false;
+    this.numbers[this.editing] = number;
+    this.editing = (this.editing + 1) % 4;
+    return true;
+  }
+  remove() {
+    for (let offset = 0; offset < 4; offset++) {
+      const index = (this.editing - offset + 4) % 4;
+      if (this.numbers[index] !== null) { this.numbers[index] = null; this.editing = index; return; }
+    }
+  }
+  complete() { return this.numbers.every(n => Number.isInteger(n) && n >= 1 && n <= 13); }
+}
+
+class Solve24Solver {
+  solve(numbers) {
+    const work = this.search(numbers);
+    let step;
+    do { step = work.next(); } while (!step.done);
+    return step.value;
+  }
+  *search(numbers) {
+    if (!Array.isArray(numbers) || numbers.length !== 4 || !numbers.every(n => Number.isInteger(n) && n >= 1 && n <= 13)) throw new RangeError('请输入4个1–13之间的整数');
+    const solutions = new Map();
+    const ops = ['+', '-', '*', '/'];
+    for (const [a,b,c,d] of this.permutations(numbers)) {
+      for (const op1 of ops) for (const op2 of ops) for (const op3 of ops) {
+        for (const node of this.buildTrees(a,b,c,d,op1,op2,op3)) {
+          if (node.value !== null && Math.abs(node.value - 24) < .0001) {
+            const key = this.canonicalKey(node);
+            if (!solutions.has(key)) solutions.set(key, this.renderNode(node));
+          }
+        }
+      }
+      yield;
+    }
+    return Array.from(solutions.values()).slice(0,10);
+  }
+  permutations(numbers) {
+    const sorted = numbers.slice().sort((a,b)=>a-b);
+    const used = Array(sorted.length).fill(false), result = [];
+    const visit = current => {
+      if (current.length === sorted.length) { result.push(current.slice()); return; }
+      for (let i=0;i<sorted.length;i++) {
+        if (used[i] || (i>0 && sorted[i]===sorted[i-1] && !used[i-1])) continue;
+        used[i]=true; current.push(sorted[i]); visit(current); current.pop(); used[i]=false;
+      }
+    };
+    visit([]);
+    return result;
+  }
+  buildTrees(a,b,c,d,op1,op2,op3) {
+    const leaf = num => ({ num, value:num });
+    const node = (op,left,right) => ({ op, left, right, value:this.calc(left.value,op,right.value) });
+    return [
+      node(op3,node(op2,node(op1,leaf(a),leaf(b)),leaf(c)),leaf(d)),
+      node(op3,node(op1,leaf(a),node(op2,leaf(b),leaf(c))),leaf(d)),
+      node(op3,node(op1,leaf(a),leaf(b)),node(op2,leaf(c),leaf(d))),
+      node(op1,leaf(a),node(op3,node(op2,leaf(b),leaf(c)),leaf(d))),
+      node(op1,leaf(a),node(op2,leaf(b),node(op3,leaf(c),leaf(d))))
+    ];
+  }
+  calc(a,op,b) {
+    if (a === null || b === null) return null;
+    if (op === '+') return a+b;
+    if (op === '-') return a-b;
+    if (op === '*') return a*b;
+    if (op === '/') return b===0 ? null : a/b;
+    return null;
+  }
+  renderNode(node) {
+    if (node.num !== undefined) return String(node.num);
+    const child = n => n.num !== undefined ? String(n.num) : `(${this.renderNode(n)})`;
+    return `${child(node.left)}${node.op}${child(node.right)}`;
+  }
+  canonicalKey(node) {
+    if (node.num !== undefined) return String(node.num);
+    if (node.op === '+' || node.op === '-') {
+      const terms = [];
+      this.collectAdd(node,1,terms);
+      terms.sort((x,y)=>x.key<y.key ? -1 : x.key>y.key ? 1 : x.sign-y.sign);
+      return 'A[' + terms.map(t=>(t.sign<0 ? '-' : '+')+t.key).join(',') + ']';
+    }
+    const factors = [];
+    this.collectMul(node,false,factors);
+    factors.sort((x,y)=>x.key<y.key ? -1 : x.key>y.key ? 1 : x.inv===y.inv ? 0 : x.inv ? 1 : -1);
+    return 'M[' + factors.map(f=>(f.inv ? '/' : '*')+f.key).join(',') + ']';
+  }
+  collectAdd(node,sign,terms) {
+    if (node.num===undefined && (node.op==='+' || node.op==='-')) {
+      this.collectAdd(node.left,sign,terms);
+      this.collectAdd(node.right,node.op==='-' ? -sign : sign,terms);
+    } else terms.push({ sign,key:this.canonicalKey(node) });
+  }
+  collectMul(node,inv,factors) {
+    if (node.num===undefined && (node.op==='*' || node.op==='/')) {
+      this.collectMul(node.left,inv,factors);
+      this.collectMul(node.right,node.op==='/' ? !inv : inv,factors);
+    } else factors.push({ inv,key:this.canonicalKey(node) });
+  }
+}
+</script>
+<script>
+(() => {
+  'use strict';
+  const { loadStats, saveStats, vibrate } = window.GameUtils;
+  const $ = id=>document.getElementById(id);
+  const input = new Solve24Input(), solver = new Solve24Solver();
+  let jobId = 0, messageId = 0, generation = 0, busy = false;
+  let audio = null;
+  let soundEnabled = loadStats('webSolve24SoundEnabled', loadStats('sfx_enabled',1)) ? true : false;
+
+  function feedback(calculate) {
+    if (loadStats('vibrate_enabled',1)) vibrate(15);
+    if (!soundEnabled) return;
+    try {
+      const AudioClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioClass) return;
+      if (!audio || audio.state==='closed') audio = new AudioClass();
+      if (audio.state==='suspended') audio.resume().catch(()=>{});
+      const oscillator = audio.createOscillator(), gain = audio.createGain();
+      const start = audio.currentTime;
+      oscillator.frequency.value = calculate ? 520 : 720;
+      gain.gain.setValueAtTime(.035,start);
+      gain.gain.exponentialRampToValueAtTime(.001,start+.1);
+      oscillator.connect(gain); gain.connect(audio.destination);
+      oscillator.onended=()=>{ oscillator.disconnect(); gain.disconnect(); };
+      oscillator.start(start); oscillator.stop(start+.11);
+    } catch (_) { /* 音频不可用不影响求解 */ }
+  }
+  function setBusy(value) {
+    busy = value;
+    $('calculateBtn').disabled = value;
+    $('calculateBtn').textContent = value ? '计算中' : '计算';
+    $('resultPanel').setAttribute('aria-busy',String(value));
+  }
+  function cancelJob() { generation++; clearTimeout(jobId); jobId=0; setBusy(false); }
+  function clearMessage() { clearTimeout(messageId); messageId=0; $('message').className='message'; $('message').textContent='输入4个数字，点击计算查看解法'; }
+  function error(text) {
+    clearTimeout(messageId);
+    $('message').className='message error'; $('message').textContent=text;
+    messageId=setTimeout(clearMessage,3000);
+  }
+  function placeholder(text,isError=false) {
+    const p=document.createElement('p'); p.className=`result-placeholder${isError ? ' error' : ''}`; p.textContent=text;
+    $('resultList').replaceChildren(p); $('resultList').scrollTop=0;
+  }
+  function clearResults() {
+    placeholder('从下方键盘输入1–13，然后点击「计算」查看答案');
+    $('resultCount').textContent='最多展示10种去重解法';
+  }
+  function renderSlots() {
+    [...$('numberSlots').children].forEach((button,i)=>{
+      button.textContent=input.numbers[i]===null ? '?' : input.numbers[i];
+      button.setAttribute('aria-pressed',String(i===input.editing));
+      button.setAttribute('aria-label',`第${i+1}个数，${input.numbers[i]===null ? '未输入' : input.numbers[i]}`);
+    });
+  }
+  function edit(number) {
+    if ($('rulesDialog').open) return;
+    cancelJob(); clearMessage();
+    if (number==='delete') input.remove(); else input.enter(number);
+    feedback(false); renderSlots(); clearResults();
+  }
+  function showSolutions(solutions) {
+    const list=$('resultList'); list.replaceChildren();
+    if (!solutions.length) placeholder('无解！这组数字算不出24',true);
+    solutions.forEach((solution,i)=>{
+      const row=document.createElement('div'); row.className='solution-row';
+      const no=document.createElement('span'); no.className='solution-no'; no.textContent=`${i+1}.`;
+      const expression=document.createElement('span'); expression.className='solution-expression'; expression.textContent=`${solution} = 24`;
+      row.append(no,expression); list.appendChild(row);
+    });
+    list.scrollTop=0;
+    $('resultCount').textContent=solutions.length ? `展示 ${solutions.length} 种解法 · 最多 10 种` : '0 种解法';
+  }
+  function calculate() {
+    if (busy || $('rulesDialog').open) return;
+    feedback(true);
+    if (!input.complete()) { error('请先输入完整的4个数字'); return; }
+    cancelJob(); clearMessage(); setBusy(true);
+    placeholder('正在计算，请稍候…'); $('resultCount').textContent='正在枚举计算方案';
+    const work=solver.search(input.numbers.slice());
+    const token=generation;
+    const run=()=>{
+      if (token!==generation) return;
+      jobId=0;
+      try {
+        const step=work.next();
+        if (!step.done) { jobId=setTimeout(run,0); return; }
+        setBusy(false); showSolutions(step.value);
+      } catch (_) {
+        setBusy(false); clearResults(); error('计算未完成，请重新输入后再试');
+      }
+    };
+    jobId=setTimeout(run,0);
+  }
+
+  for(let i=0;i<4;i++) {
+    const button=document.createElement('button'); button.className='number-slot'; button.dataset.slot=i;
+    button.addEventListener('click',()=>{ if (!$('rulesDialog').open) { input.select(i); renderSlots(); } });
+    $('numberSlots').appendChild(button);
+  }
+  for(let n=1;n<=13;n++) {
+    const button=document.createElement('button'); button.className=`key${n>=10 ? ' wide-label' : ''}`; button.dataset.number=n; button.textContent=n;
+    button.setAttribute('aria-label',`输入${n}`); button.addEventListener('click',()=>edit(n)); $('keypad').appendChild(button);
+  }
+  const remove=document.createElement('button'); remove.id='deleteBtn'; remove.className='key delete'; remove.textContent='←'; remove.setAttribute('aria-label','删除数字'); remove.addEventListener('click',()=>edit('delete')); $('keypad').appendChild(remove);
+  const submit=document.createElement('button'); submit.id='calculateBtn'; submit.className='key calculate'; submit.textContent='计算'; submit.addEventListener('click',calculate); $('keypad').appendChild(submit);
+  $('helpBtn').addEventListener('click',()=>{ if (!$('rulesDialog').open) $('rulesDialog').showModal(); });
+  $('closeRulesBtn').addEventListener('click',()=>$('rulesDialog').close());
+  $('soundEnabled').checked=soundEnabled;
+  $('soundEnabled').addEventListener('change',event=>{
+    soundEnabled=event.target.checked; saveStats('webSolve24SoundEnabled',soundEnabled);
+    if (!soundEnabled && audio) audio.suspend().catch(()=>{});
+  });
+  document.addEventListener('visibilitychange',()=>{ if (document.hidden && audio) audio.suspend().catch(()=>{}); });
+  window.addEventListener('pagehide',()=>{
+    const wasBusy=busy;
+    cancelJob(); clearMessage();
+    if (wasBusy) clearResults();
+    if (audio) audio.close().catch(()=>{});
+  });
+  renderSlots();
+})();
+</script>
+</body>
+</html>

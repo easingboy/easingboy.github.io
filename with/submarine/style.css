@@ -1,0 +1,746 @@
+/* ===== 全局重置 ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: linear-gradient(135deg, #0a0e27 0%, #0d1b3e 50%, #0a2040 100%);
+  min-height: 100vh;
+  color: #e0f0ff;
+}
+
+.page-wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+/* ===== 标题 ===== */
+.title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  text-shadow: 0 0 20px rgba(125, 211, 252, 0.5);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 24px;
+}
+
+/* ===== 海洋容器 ===== */
+.ocean-container {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background: linear-gradient(
+    to bottom,
+    #0ea5e9 0%,
+    #0284c7 8%,
+    #0369a1 20%,
+    #075985 40%,
+    #0c4a6e 65%,
+    #082f49 85%,
+    #041f30 100%
+  );
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid rgba(125, 211, 252, 0.3);
+  box-shadow: 0 0 40px rgba(14, 165, 233, 0.2), inset 0 0 60px rgba(0,0,0,0.3);
+  margin-bottom: 24px;
+}
+
+/* ===== 水面波纹 ===== */
+.surface-waves {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.wave {
+  position: absolute;
+  width: 200%;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  top: -20px;
+}
+
+.wave1 {
+  animation: waveMove 4s linear infinite;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.wave2 {
+  animation: waveMove 6s linear infinite reverse;
+  background: rgba(125, 211, 252, 0.08);
+  top: -15px;
+}
+
+.wave3 {
+  animation: waveMove 8s linear infinite;
+  background: rgba(255, 255, 255, 0.05);
+  top: -10px;
+}
+
+@keyframes waveMove {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ===== 气泡 ===== */
+.bubbles-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(125,211,252,0.2));
+  border: 1px solid rgba(255,255,255,0.3);
+  animation: bubbleRise linear infinite;
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0) translateX(0); opacity: 0.8; }
+  50% { transform: translateY(-50%) translateX(8px); opacity: 0.5; }
+  100% { transform: translateY(-100%) translateX(-4px); opacity: 0; }
+}
+
+/* ===== 深度标尺 ===== */
+.depth-ruler {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 8;
+}
+
+.ruler-mark {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ruler-mark::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 1px;
+  background: rgba(125, 211, 252, 0.4);
+}
+
+.ruler-mark span {
+  font-size: 0.65rem;
+  color: rgba(125, 211, 252, 0.5);
+  white-space: nowrap;
+}
+
+/* ===== 潜水艇包装器 ===== */
+.submarine-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 5%;
+  transition: top 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== 潜水艇主体 ===== */
+.submarine {
+  position: relative;
+  width: 220px;
+  height: 80px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+}
+
+.sub-body {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  width: 180px;
+  height: 50px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #d97706 70%, #b45309 100%);
+  border-radius: 50px;
+  box-shadow:
+    inset 0 4px 8px rgba(255,255,255,0.3),
+    inset 0 -4px 8px rgba(0,0,0,0.3),
+    0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* 指挥塔 */
+.conning-tower {
+  position: absolute;
+  top: -28px;
+  left: 55px;
+  width: 44px;
+  height: 30px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 8px 8px 0 0;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.2);
+}
+
+.periscope {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 20px;
+  background: #92400e;
+  border-radius: 2px;
+  transition: transform 0.5s ease;
+}
+
+.periscope::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 12px;
+  height: 4px;
+  background: #92400e;
+  border-radius: 2px;
+}
+
+.antenna {
+  position: absolute;
+  top: -10px;
+  right: 8px;
+  width: 2px;
+  height: 12px;
+  background: #78350f;
+  border-radius: 1px;
+}
+
+/* 舷窗 */
+.porthole {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  border: 3px solid #92400e;
+  box-shadow: inset 0 0 6px rgba(125, 211, 252, 0.5), 0 0 4px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.porthole-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(125,211,252,0.6), rgba(14,165,233,0.2));
+  animation: portholePulse 3s ease-in-out infinite;
+}
+
+@keyframes portholePulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.porthole-1 { left: 30px; }
+.porthole-2 { left: 60px; }
+
+/* 螺旋桨 */
+.propeller {
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  animation: propellerSpin 0.4s linear infinite;
+}
+
+.blade {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 4px;
+  background: linear-gradient(90deg, #92400e, #b45309);
+  border-radius: 2px;
+  transform-origin: 0 50%;
+}
+
+.blade-1 { transform: translateY(-50%) rotate(0deg); }
+.blade-2 { transform: translateY(-50%) rotate(90deg); }
+.blade-3 { transform: translateY(-50%) rotate(180deg); }
+.blade-4 { transform: translateY(-50%) rotate(270deg); }
+
+@keyframes propellerSpin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* 舵 */
+.rudder-front {
+  position: absolute;
+  left: 10px;
+  top: -8px;
+  width: 20px;
+  height: 8px;
+  background: #d97706;
+  border-radius: 2px 2px 0 0;
+  transform: skewX(-10deg);
+}
+
+.rudder-rear {
+  position: absolute;
+  right: 8px;
+  top: -10px;
+  width: 16px;
+  height: 10px;
+  background: #d97706;
+  border-radius: 2px 2px 0 0;
+}
+
+/* ===== 压载水舱 ===== */
+.ballast-tanks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.ballast-tank {
+  position: absolute;
+  width: 36px;
+  height: 44px;
+  border: 2px solid rgba(146, 64, 14, 0.8);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tank-left {
+  left: 28px;
+  top: calc(50% + 28px);
+}
+
+.tank-right {
+  right: 28px;
+  top: calc(50% + 28px);
+}
+
+.tank-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: rgba(251, 191, 36, 0.8);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tank-water {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  background: linear-gradient(to top, rgba(14, 165, 233, 0.9), rgba(56, 189, 248, 0.6));
+  transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 0 4px 4px;
+}
+
+.tank-bubbles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ===== 状态标签 ===== */
+.status-badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  color: #7dd3fc;
+  transition: all 0.5s ease;
+  white-space: nowrap;
+}
+
+.status-badge.floating { background: rgba(34, 197, 94, 0.2); border-color: rgba(74, 222, 128, 0.5); color: #4ade80; }
+.status-badge.hovering { background: rgba(59, 130, 246, 0.2); border-color: rgba(96, 165, 250, 0.5); color: #60a5fa; }
+.status-badge.sinking  { background: rgba(251, 146, 60, 0.2); border-color: rgba(251, 146, 60, 0.5); color: #fb923c; }
+.status-badge.bottom   { background: rgba(239, 68, 68, 0.2); border-color: rgba(248, 113, 113, 0.5); color: #f87171; }
+
+/* ===== 海底 ===== */
+.seabed {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, #1a0a00, #2d1500, #3d1f00);
+  border-radius: 0 0 18px 18px;
+}
+
+.seabed-rocks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: radial-gradient(ellipse 30px 12px at 10% 100%, #4a2800 50%, transparent 51%),
+              radial-gradient(ellipse 20px 10px at 25% 100%, #3d2000 50%, transparent 51%),
+              radial-gradient(ellipse 40px 15px at 45% 100%, #5a3200 50%, transparent 51%),
+              radial-gradient(ellipse 25px 12px at 65% 100%, #4a2800 50%, transparent 51%),
+              radial-gradient(ellipse 35px 14px at 82% 100%, #3d2000 50%, transparent 51%),
+              radial-gradient(ellipse 20px 10px at 95% 100%, #5a3200 50%, transparent 51%);
+}
+
+.seabed-plants {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.seaweed {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to top, #166534, #15803d, #16a34a);
+  transform-origin: bottom center;
+  animation: seaweedSway 3s ease-in-out infinite;
+}
+
+.sw1 { left: 8%; height: 30px; animation-delay: 0s; }
+.sw2 { left: 20%; height: 22px; animation-delay: 0.5s; }
+.sw3 { left: 40%; height: 35px; animation-delay: 1s; }
+.sw4 { left: 60%; height: 28px; animation-delay: 0.3s; }
+.sw5 { left: 78%; height: 32px; animation-delay: 0.8s; }
+
+@keyframes seaweedSway {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+.fish {
+  position: absolute;
+  font-size: 1.2rem;
+  animation: fishSwim linear infinite;
+  bottom: 60px;
+}
+
+.fish1 { animation-duration: 12s; animation-delay: 0s; bottom: 80px; }
+.fish2 { animation-duration: 18s; animation-delay: -6s; bottom: 120px; }
+.fish3 { animation-duration: 22s; animation-delay: -10s; bottom: 160px; }
+
+@keyframes fishSwim {
+  0% { left: -5%; transform: scaleX(1); }
+  49% { left: 105%; transform: scaleX(1); }
+  50% { left: 105%; transform: scaleX(-1); }
+  99% { left: -5%; transform: scaleX(-1); }
+  100% { left: -5%; transform: scaleX(1); }
+}
+
+/* ===== 控制面板 ===== */
+.control-panel {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.2), rgba(59, 130, 246, 0.1));
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #7dd3fc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.15);
+}
+
+.panel-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== 水舱控制 ===== */
+.tanks-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tank-control-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tank-control-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.tank-icon { font-size: 1rem; }
+
+.tank-percent {
+  margin-left: auto;
+  font-weight: 700;
+  color: #38bdf8;
+  font-size: 0.9rem;
+  min-width: 36px;
+  text-align: right;
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.tank-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #0ea5e9 0%, #0ea5e9 var(--val, 0%), rgba(255,255,255,0.1) var(--val, 0%));
+  outline: none;
+  cursor: pointer;
+}
+
+.tank-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.tank-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.tank-visual-mini {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(125, 211, 252, 0.1);
+}
+
+.tank-mini-water {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  border-radius: 4px;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== 快捷按钮 ===== */
+.quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: #e2e8f0;
+}
+
+.quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.quick-btn:active { transform: translateY(0); }
+
+.btn-icon { font-size: 1.4rem; }
+.btn-text { font-size: 0.85rem; font-weight: 600; }
+.btn-desc { font-size: 0.65rem; color: #64748b; }
+
+.btn-float { border-color: rgba(74, 222, 128, 0.3); }
+.btn-float:hover { background: rgba(34, 197, 94, 0.15); border-color: rgba(74, 222, 128, 0.6); }
+
+.btn-hover { border-color: rgba(96, 165, 250, 0.3); }
+.btn-hover:hover { background: rgba(59, 130, 246, 0.15); border-color: rgba(96, 165, 250, 0.6); }
+
+.btn-sink { border-color: rgba(251, 146, 60, 0.3); }
+.btn-sink:hover { background: rgba(249, 115, 22, 0.15); border-color: rgba(251, 146, 60, 0.6); }
+
+.btn-bottom { border-color: rgba(248, 113, 113, 0.3); }
+.btn-bottom:hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(248, 113, 113, 0.6); }
+
+.quick-btn.active {
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.4);
+}
+
+.btn-float.active { background: rgba(34, 197, 94, 0.2); border-color: #4ade80; }
+.btn-hover.active { background: rgba(59, 130, 246, 0.2); border-color: #60a5fa; }
+.btn-sink.active  { background: rgba(249, 115, 22, 0.2); border-color: #fb923c; }
+.btn-bottom.active{ background: rgba(239, 68, 68, 0.2); border-color: #f87171; }
+
+/* ===== 状态信息 ===== */
+.status-info {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.info-item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.info-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+/* ===== 原理说明 ===== */
+.principle-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(125, 211, 252, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.principle-card h3 {
+  font-size: 1rem;
+  color: #7dd3fc;
+  margin-bottom: 16px;
+}
+
+.principle-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.step-icon { font-size: 1.6rem; }
+
+.step-content strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.step-content p {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* ===== 页脚 ===== */
+footer {
+  text-align: center;
+  color: #475569;
+  font-size: 0.8rem;
+  padding-top: 8px;
+}
+
+footer a { text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 640px) {
+  .title { font-size: 1.5rem; }
+  .ocean-container { height: 360px; }
+  .tanks-control { grid-template-columns: 1fr; }
+  .quick-buttons { grid-template-columns: repeat(2, 1fr); }
+  .status-info { grid-template-columns: repeat(2, 1fr); }
+  .principle-steps { grid-template-columns: repeat(2, 1fr); }
+  .submarine { width: 160px; height: 60px; }
+  .sub-body { left: 14px; top: 14px; width: 132px; height: 38px; }
+}

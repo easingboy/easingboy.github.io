@@ -1,0 +1,15 @@
+{
+  "超级玛丽": [
+    ["超级马里奥1", "roms/SuperMarioBros.nes"]
+  ],
+  "魂斗罗": [
+    ["魂斗罗1(30命S弹)", "roms/Contra1_30S.nes"],
+    ["魂斗罗3", "roms/Contra3.nes"]
+  ],
+  "忍者龟": [
+    ["忍者龟格斗无限弹珠版", "roms/renzhegedou.nes"]
+  ],
+  "淘金者": [
+    ["淘金者", "roms/TaoJinZhe.nes"]
+  ]
+}

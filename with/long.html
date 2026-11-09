@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>是男人就坚持18秒</title>
+<link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="../icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<style>
+  :root {
+    --card-bg: rgba(255,255,255,.08);
+    --card-border: rgba(255,255,255,.16);
+    --text: #f2f4f8;
+    --text-dim: rgba(242,244,248,.62);
+    --accent: #7dd3fc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+  }
+  body {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    background: linear-gradient(160deg, #0f2027, #203a43, #2c5364 60%, #0f2027);
+    background-size: 200% 200%;
+    animation: bgShift 18s ease-in-out infinite;
+    position: relative; overflow-x: hidden;
+  }
+  @keyframes bgShift {
+    0%,100% { background-position: 0% 0%; }
+    50%     { background-position: 100% 100%; }
+  }
+
+  /* 装饰光斑 */
+  .glow { position: fixed; border-radius: 50%; filter: blur(60px); opacity: .35; pointer-events: none; z-index: 0; }
+  .glow.a { width: 420px; height: 420px; top: -120px; left: -100px; background: #38bdf8; }
+  .glow.b { width: 380px; height: 380px; bottom: -140px; right: -80px; background: #a78bfa; }
+
+  /* 玻璃卡片 */
+  .wrap {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 460px;
+    padding: 22px 20px 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    border-radius: 22px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  }
+  h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: 2px; }
+
+  .hud {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 8px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+  }
+  .time {
+    font-size: clamp(30px, 8vw, 40px); font-weight: 600; letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 4px 24px rgba(56,189,248,.35);
+  }
+  .hud-right { display: flex; align-items: center; gap: 10px; }
+  .best { font-size: 13px; color: var(--text-dim); }
+  .icon-btn {
+    width: 34px; height: 34px; flex: none; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; line-height: 1; color: var(--text); cursor: pointer;
+    border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.16);
+  }
+  .icon-btn:active { transform: scale(.94); }
+
+  .stage {
+    position: relative;
+    width: min(100%, 60dvh); max-width: 420px;
+    aspect-ratio: 1 / 1;
+    border-radius: 20px; overflow: hidden;
+    background: radial-gradient(120% 120% at 50% 0%, #141a24, #080b10 70%);
+    box-shadow: inset 0 0 0 1px var(--card-border), 0 20px 60px rgba(0,0,0,.45);
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    transition: box-shadow .18s ease;
+  }
+  .stage.shake { animation: shake .28s ease; }
+  @keyframes shake {
+    0%,100% { transform: translate(0,0); }
+    25%     { transform: translate(-6px, 3px); }
+    50%     { transform: translate(5px, -4px); }
+    75%     { transform: translate(-3px, -2px); }
+  }
+  /* 危险预警：舞台内侧泛红 */
+  .stage.warn {
+    box-shadow: inset 0 0 0 1px rgba(248,113,113,.6),
+                inset 0 0 46px rgba(239,68,68,.2),
+                0 20px 60px rgba(0,0,0,.45);
+  }
+
+  .enemy {
+    position: absolute; border-radius: 10px;
+    background: linear-gradient(135deg, #60a5fa, #1d4ed8);
+    box-shadow: 0 0 18px rgba(59,130,246,.45), inset 0 1px 0 rgba(255,255,255,.28), inset 0 -3px 8px rgba(0,0,0,.35);
+  }
+  .box {
+    position: absolute; border-radius: 12px; cursor: grab;
+    background: linear-gradient(135deg, #f87171, #b91c1c);
+    box-shadow: 0 0 24px rgba(239,68,68,.55), inset 0 1px 0 rgba(255,255,255,.32), inset 0 -3px 8px rgba(0,0,0,.35);
+    touch-action: none;
+  }
+  .box:active { cursor: grabbing; }
+  /* 近距离：红色描边脉动 */
+  .box.danger { animation: danger .4s ease-in-out infinite; }
+  @keyframes danger {
+    50% { box-shadow: 0 0 34px rgba(248,113,113,.95), 0 0 0 3px rgba(248,113,113,.85),
+          inset 0 1px 0 rgba(255,255,255,.32), inset 0 -3px 8px rgba(0,0,0,.35); }
+  }
+  /* 死亡：爆闪 */
+  .box.dead { animation: flash .5s ease 2; }
+  @keyframes flash { 50% { opacity: .12; } }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 28px; text-align: center;
+    background: rgba(8,11,16,.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    pointer-events: none;
+  }
+  .overlay.blocking { pointer-events: auto; }
+  .overlay.hidden { display: none; }
+  /* 未开始 / 暂停时的轻提示：不遮挡画面 */
+  .overlay.soft {
+    background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;
+    justify-content: flex-end; padding-bottom: 18px;
+  }
+  .overlay.soft .ov-title { font-size: 14px; text-shadow: 0 2px 10px rgba(0,0,0,.85); }
+  .overlay.soft .ov-sub { font-size: 12px; text-shadow: 0 2px 10px rgba(0,0,0,.85); }
+  .ov-title { font-size: 17px; font-weight: 600; }
+  .ov-sub { font-size: 13px; line-height: 1.9; color: rgba(242,244,248,.68); }
+  .btn {
+    margin-top: 4px; padding: 10px 22px; font-size: 14px; color: #0b1220;
+    border: 0; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+    box-shadow: 0 8px 20px rgba(56,189,248,.32);
+  }
+  .btn:active { transform: scale(.97); }
+
+  .tips { margin: 0; font-size: 12.5px; line-height: 1.9; text-align: center; color: rgba(242,244,248,.55); }
+</style>
+</head>
+<body>
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+
+  <div class="wrap">
+    <h1>是男人就坚持 18 秒</h1>
+
+    <div class="hud">
+      <div class="time" id="time">0.00″</div>
+      <div class="hud-right">
+        <div class="best" id="best">最佳 --</div>
+        <button class="icon-btn" id="mute" aria-label="音效开关">🔊</button>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="box" id="box"></div>
+      <div class="overlay soft" id="overlay">
+        <div class="ov-title" id="ovTitle">拖动红块开始</div>
+        <div class="ov-sub" id="ovSub">碰到蓝块或拖出黑区即失败 · 坚持 18 秒以上者为天才</div>
+        <button class="btn" id="btn" hidden>再来一局</button>
+      </div>
+    </div>
+
+    <p class="tips">鼠标 / 触屏 / 方向键（WASD）均可操作 · 松手红块停在原地<br />红块描边泛红 = 危险逼近 · 超过 60 秒，你请我吃饭！！</p>
+  </div>
+
+<script>
+const FIELD = 1000;                 // 逻辑坐标：舞台内统一 0~1000
+const BOX = 90;                     // 红块边长
+const KEY_SPEED = 950;              // 键盘速度（逻辑单位/秒）
+const TOUCH_LIFT = 120;             // 触屏时红块上移量，避免被手指遮挡
+const DANGER = 45;                  // 危险预警距离
+const BEST_KEY = 'long18.best';
+const MUTE_KEY = 'long18.mute';
+
+// 敌人初始状态（坐标/尺寸均为逻辑单位，方向取自原版）
+const INIT = [
+  { x: 600, y: 133, w: 133, h: 111, dx: -10, dy:  12 },
+  { x: 667, y: 733, w: 222, h:  44, dx: -12, dy: -20 },
+  { x: 156, y: 711, w:  67, h: 133, dx:  15, dy: -13 },
+  { x: 156, y: 156, w: 133, h: 133, dx:  17, dy:  11 },
+];
+
+const IDLE = 0, PLAY = 1, PAUSE = 2, OVER = 3;
+
+const stage   = document.getElementById('stage');
+const boxEl   = document.getElementById('box');
+const timeEl  = document.getElementById('time');
+const bestEl  = document.getElementById('best');
+const overlay = document.getElementById('overlay');
+const ovTitle = document.getElementById('ovTitle');
+const ovSub   = document.getElementById('ovSub');
+const btn     = document.getElementById('btn');
+const muteBtn = document.getElementById('mute');
+
+let enemies = [];
+let box = { x: (FIELD - BOX) / 2, y: (FIELD - BOX) / 2 };
+let state = IDLE, dragging = false, elapsed = 0, last = 0, grabX = 0, grabY = 0;
+let best = parseFloat(localStorage.getItem(BEST_KEY)) || 0;
+let muted = localStorage.getItem(MUTE_KEY) === '1';
+
+bestEl.textContent = best ? '最佳 ' + best.toFixed(2) + '″' : '最佳 --';
+muteBtn.textContent = muted ? '🔇' : '🔊';
+
+// ---- 初始化 ----
+for (const e of INIT) {
+  const el = document.createElement('div');
+  el.className = 'enemy';
+  el.style.width  = pct(e.w);
+  el.style.height = pct(e.h);
+  stage.insertBefore(el, boxEl);
+  enemies.push({ ...e, el });
+}
+boxEl.style.width  = pct(BOX);
+boxEl.style.height = pct(BOX);
+paint();
+
+function pct(v) { return (v / FIELD * 100) + '%'; }
+
+function paint() {
+  boxEl.style.left = pct(box.x);
+  boxEl.style.top  = pct(box.y);
+  for (const e of enemies) {
+    e.el.style.left = pct(e.x);
+    e.el.style.top  = pct(e.y);
+  }
+}
+
+// ---- 输入：pointer 事件统一鼠标 / 触摸 ----
+// 按下只抓取（不改变位置、不启动计时）；真正拖动才开局，与原版一致
+boxEl.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (state === OVER) return;
+  const p = toField(e);
+  grabX = box.x - p.x;
+  grabY = box.y - p.y;
+  dragging = true;
+});
+window.addEventListener('pointermove', (e) => {
+  if (!dragging || state === OVER) return;
+  if (beginIfIdle()) moveTo(e);
+});
+window.addEventListener('pointerup',     () => { dragging = false; });
+window.addEventListener('pointercancel', () => { dragging = false; });
+
+function toField(e) {
+  const r = stage.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width  * FIELD;
+  let   y = (e.clientY - r.top)  / r.height * FIELD;
+  if (e.pointerType === 'touch') y -= TOUCH_LIFT;   // 手指遮挡补偿
+  return { x, y };
+}
+
+function moveTo(e) {
+  const p = toField(e);
+  box.x = p.x + grabX;
+  box.y = p.y + grabY;
+  paint();
+  checkAfterMove();
+}
+
+// ---- 输入：方向键 / WASD ----
+const KEYS = {
+  ArrowUp: [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0],
+  w: [0,-1], s: [0,1], a: [-1,0], d: [1,0],
+};
+const held = new Set();
+window.addEventListener('keydown', (e) => {
+  const k = dirKey(e.key);
+  if (!KEYS[k] || e.metaKey || e.ctrlKey) return;
+  e.preventDefault();
+  held.add(k);
+  beginIfIdle();          // 按方向键即开局
+});
+window.addEventListener('keyup', (e) => held.delete(dirKey(e.key)));
+window.addEventListener('blur', () => held.clear());
+function dirKey(k) { return k.length === 1 ? k.toLowerCase() : k; }
+
+function moveByKeys(dt) {
+  let vx = 0, vy = 0;
+  for (const k of held) { const d = KEYS[k]; vx += d[0]; vy += d[1]; }
+  const len = Math.hypot(vx, vy) || 1;
+  box.x += vx / len * KEY_SPEED * dt;
+  box.y += vy / len * KEY_SPEED * dt;
+  paint();
+  checkAfterMove();
+}
+
+// 首次（或暂停后）真正操作红块时才开始计时
+function beginIfIdle() {
+  if (state === IDLE || state === PAUSE) resume();
+  return state === PLAY;
+}
+
+function checkAfterMove() {
+  if (outOfField()) return over('out');
+  if (hitAny())     return over('hit');
+}
+
+// ---- 状态 ----
+function resume() {
+  state = PLAY;
+  last = performance.now();
+  hideOverlay();
+  sfxStart();
+}
+
+function pause() {
+  if (state !== PLAY) return;
+  state = PAUSE;
+  dragging = false;
+  held.clear();
+  clearWarn();
+  showOverlay('已暂停', '拖动红块（或按方向键）继续', false);
+}
+
+function over(reason) {
+  if (state === OVER) return;
+  state = OVER;
+  dragging = false;
+  held.clear();
+  clearWarn();
+  boxEl.classList.add('dead');
+  stage.classList.add('shake');
+  setTimeout(() => stage.classList.remove('shake'), 300);
+
+  const isBest = elapsed > best;
+  if (isBest) {
+    best = elapsed;
+    localStorage.setItem(BEST_KEY, String(best));
+    bestEl.textContent = '最佳 ' + best.toFixed(2) + '″';
+  }
+  if (isBest) sfxRecord(); else sfxDie();
+
+  showOverlay(
+    elapsed >= 18 ? '恭喜你，帅哥！' : '不行啊…',
+    (reason === 'out' ? '红块被拖出了黑区。' : '红块撞上了蓝块。') +
+    '<br />你坚持了 <b>' + elapsed.toFixed(2) + '</b> 秒' +
+    (elapsed >= 60 ? '<br />超过 60 秒，你请我吃饭！！' : elapsed >= 18 ? '<br />继续加油' : '<br />加油哦！'),
+    true
+  );
+}
+
+function reset() {
+  enemies.forEach((e, i) => Object.assign(e, INIT[i]));
+  box = { x: (FIELD - BOX) / 2, y: (FIELD - BOX) / 2 };
+  elapsed = 0;
+  dragging = false;
+  state = IDLE;
+  boxEl.classList.remove('dead');
+  timeEl.textContent = '0.00″';
+  paint();
+  showOverlay('拖动红块开始', '碰到蓝块或拖出黑区即失败 · 坚持 18 秒以上者为天才', false);
+}
+
+function clearWarn() {
+  boxEl.classList.remove('danger');
+  stage.classList.remove('warn');
+}
+
+function showOverlay(title, sub, blocking) {
+  ovTitle.textContent = title;
+  ovSub.innerHTML = sub;
+  btn.hidden = !blocking;
+  overlay.classList.remove('hidden');
+  overlay.classList.toggle('blocking', blocking);
+  overlay.classList.toggle('soft', !blocking);
+}
+function hideOverlay() { overlay.classList.add('hidden'); }
+
+btn.addEventListener('click', reset);
+muteBtn.addEventListener('click', () => {
+  muted = !muted;
+  localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+  if (!muted) sfxStart();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+// ---- 音效（WebAudio，可关） ----
+let ac = null;
+function ctx() {
+  if (muted) return null;
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(freq, dur, type, vol, delay) {
+  const c = ctx(); if (!c) return;
+  const t0 = c.currentTime + (delay || 0);
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(c.destination);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function sfxStart()  { tone(660, .12, 'triangle', .10, 0);    tone(880, .14, 'triangle', .10, .10); }
+function sfxDie()    { tone(240, .30, 'sawtooth', .10, 0);    tone(120, .42, 'sawtooth', .09, .07); }
+function sfxRecord() { tone(523, .12, 'triangle', .10, 0);    tone(784, .12, 'triangle', .10, .12); tone(1046, .22, 'triangle', .10, .24); }
+
+// ---- 主循环 ----
+function speedAt(t) {
+  if (t < 10) return 420;
+  if (t < 20) return 560;
+  if (t < 30) return 720;
+  if (t < 45) return 880;
+  return 1050;
+}
+
+function frame(ts) {
+  const dt = Math.min((ts - last) / 1000, 0.05);   // 切后台回来不做大跳
+  last = ts;
+
+  if (state === PLAY) {
+    elapsed += dt;
+    timeEl.textContent = elapsed.toFixed(2) + '″';
+
+    const speed = speedAt(elapsed);
+    for (const e of enemies) {
+      const len = Math.hypot(e.dx, e.dy);
+      const ux = e.dx / len, uy = e.dy / len;
+      e.x += ux * speed * dt;
+      e.y += uy * speed * dt;
+      if (e.x <= 0)           { e.x = 0;           e.dx = -e.dx; }
+      if (e.x + e.w >= FIELD) { e.x = FIELD - e.w; e.dx = -e.dx; }
+      if (e.y <= 0)           { e.y = 0;           e.dy = -e.dy; }
+      if (e.y + e.h >= FIELD) { e.y = FIELD - e.h; e.dy = -e.dy; }
+    }
+    if (held.size) moveByKeys(dt); else paint();
+
+    if (state === PLAY && hitAny()) over('hit');
+  }
+
+  if (state === PLAY) {
+    const near = Math.min(...enemies.map(gapTo)) < DANGER;
+    boxEl.classList.toggle('danger', near);
+    stage.classList.toggle('warn', near);
+  }
+  requestAnimationFrame(frame);
+}
+
+// 红块与敌人的 AABB 间隙（重叠为 0）
+function gapTo(e) {
+  const dx = Math.max(e.x - (box.x + BOX), box.x - (e.x + e.w), 0);
+  const dy = Math.max(e.y - (box.y + BOX), box.y - (e.y + e.h), 0);
+  return Math.hypot(dx, dy);
+}
+function hitAny() {
+  const b = { x: box.x, y: box.y, w: BOX, h: BOX };
+  return enemies.some(e => b.x < e.x + e.w && b.x + b.w > e.x && b.y < e.y + e.h && b.y + b.h > e.y);
+}
+function outOfField() {
+  return box.x < 0 || box.y < 0 || box.x + BOX > FIELD || box.y + BOX > FIELD;
+}
+
+last = performance.now();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

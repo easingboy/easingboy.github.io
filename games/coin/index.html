@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>硬币之谜</title>
+<link rel="stylesheet" href="../shared/style.css" />
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<style>
+  :root {
+    --bg-1: #16213e;
+    --bg-2: #1a1a2e;
+    --text: #ffffff;
+    --text-dim: #a0a5b8;
+    --gold: #ffd700;
+    --left: #4ecca3;
+    --right: #e94560;
+    --accent: #e94560;
+  }
+  body {
+    background: linear-gradient(180deg, #16213e, #1a1a2e 70%, #0f0f1a);
+    background-attachment: fixed;
+    animation: none;
+    min-height: 100svh;
+  }
+  button, a { touch-action: manipulation; }
+  button { font: inherit; }
+  button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid #ffffff; outline-offset: 4px;
+  }
+  [hidden] { display: none !important; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .shell {
+    width: min(100%, 440px); margin: 0 auto;
+    padding: max(12px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  }
+  .game-header {
+    padding: 4px 0 20px; gap: 8px;
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+  .game-header .title { margin: 0; font-size: 22px; letter-spacing: 1px; }
+  .game-header .back-btn, .game-header .help-btn {
+    width: 40px; height: 40px; padding: 0;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  }
+  .subtle { color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+  .section-label {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--text-dim); font-size: 12px; font-weight: 400;
+    margin: 0 0 12px;
+  }
+  .section-label::before, .section-label::after { content: ''; height: 1px; flex: 1; background: rgba(255,255,255,.1); }
+  .btn { min-height: 44px; border-radius: 22px; }
+  .btn.primary { color: #fff; background: var(--right); border-color: var(--right); }
+  .btn.primary:hover:not(:disabled) { background: #f05a73; border-color: #f05a73; }
+  .btn:disabled { transform: none; opacity: .38; }
+  .text-btn { border: 0; background: transparent; color: var(--text-dim); min-height: 44px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+  .text-btn:hover:not(:disabled) { color: #fff; }
+  .text-btn:disabled { opacity: .35; cursor: default; }
+
+  .start-page { text-align: center; padding-top: 20px; }
+  .hero-coin { width: 76px; height: 76px; margin: 0 auto 20px; display: block; }
+  .game-title { font-size: 32px; font-weight: 700; letter-spacing: 5px; margin: 0 0 12px; color: var(--gold); }
+  .game-subtitle { margin: 0; }
+  .rules-card { margin: 26px 0; padding: 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(255,255,255,.04); text-align: left; }
+  .rules-card h2 { margin: 0 0 12px; font-size: 15px; color: var(--gold); }
+  .rules-card ol { margin: 0; padding-left: 20px; color: #c7cad4; font-size: 14px; line-height: 1.9; }
+  #startBtn { min-width: 200px; min-height: 50px; }
+  .stats-line { margin: 20px 0 0; font-variant-numeric: tabular-nums; }
+
+  .tray-switch { display: flex; justify-content: space-between; gap: 24px; }
+  .side-btn { width: 110px; height: 44px; border-radius: 16px; border: 1.5px solid transparent; background: rgba(255,255,255,.05); color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .side-btn.left.active { color: var(--left); border-color: var(--left); background: rgba(78,204,163,.13); }
+  .side-btn.right.active { color: var(--right); border-color: var(--right); background: rgba(233,69,96,.13); }
+  .side-btn:disabled { cursor: default; }
+  .scale-wrap { width: 100%; aspect-ratio: 360 / 175; margin: 2px 0 0; }
+  .scale-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .scale-beam { stroke: var(--gold); stroke-width: 3; stroke-linecap: round; }
+  .scale-support { fill: rgba(160,160,160,.1); stroke: #a0a0a0; stroke-width: 3; stroke-linejoin: round; }
+  .scale-chain { stroke: #a0a0a0; stroke-width: 1.5; }
+  .tray { cursor: pointer; }
+  .tray.left { color: var(--left); }
+  .tray.right { color: var(--right); }
+  .tray-frame { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.22); stroke-width: 1; }
+  .tray[aria-pressed="true"] .tray-frame { fill: currentColor; fill-opacity: .1; stroke: currentColor; stroke-width: 2; }
+  .tray[aria-disabled="true"] { cursor: default; }
+  .tray-placeholder { fill: #737a91; font-size: 12px; text-anchor: middle; dominant-baseline: central; }
+  .tray circle { fill: currentColor; fill-opacity: .2; stroke: currentColor; stroke-width: 1; }
+  .tray .coin-number { fill: #fff; font-size: 11px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .weigh-result { height: 32px; line-height: 32px; text-align: center; font-size: 15px; font-weight: 600; margin: 0; }
+  .weigh-result.left-heavy { color: var(--left); }
+  .weigh-result.right-heavy { color: var(--right); }
+  .weigh-result.balanced { color: var(--gold); }
+  .weigh-actions { text-align: center; height: 84px; padding-top: 4px; }
+  #weighBtn { width: 180px; height: 44px; padding: 0 8px; font-size: 14px; }
+  .weigh-note { height: 28px; margin: 4px 0 0; line-height: 24px; font-size: 12px; color: var(--text-dim); }
+  .coin-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 46px)); justify-content: center; gap: 10px 8px; max-width: 316px; margin: 0 auto; }
+  .coin { display: flex; flex-direction: column; align-items: center; min-width: 0; border: 0; background: transparent; padding: 0; cursor: pointer; color: var(--gold); }
+  .coin-face { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; font-size: 16px; font-weight: 700; border: 1.5px solid rgba(255,215,0,.5); background: rgba(255,215,0,.12); }
+  .coin-place { height: 15px; line-height: 15px; font-size: 10px; color: currentColor; }
+  .coin.in-left { color: var(--left); }
+  .coin.in-right, .coin.selected-answer { color: var(--right); }
+  .coin.in-left .coin-face { background: rgba(78,204,163,.18); border-color: var(--left); }
+  .coin.in-right .coin-face, .coin.selected-answer .coin-face { background: rgba(233,69,96,.18); border-color: var(--right); }
+  .coin:hover:not(:disabled) .coin-face { filter: brightness(1.2); }
+  .coin:active:not(:disabled) .coin-face { transform: scale(.95); }
+  .coin:disabled { cursor: default; }
+  .history-section { margin-top: 20px; }
+  .weigh-history { display: grid; grid-template-rows: repeat(3, 50px); gap: 4px; }
+  .history-item { display: grid; grid-template-columns: 20px minmax(0, 1fr) 44px; align-items: center; column-gap: 8px; font-size: 12px; height: 50px; border-bottom: 1px solid rgba(255,255,255,.06); font-variant-numeric: tabular-nums; }
+  .history-item .no { color: var(--text-dim); text-align: center; }
+  .side-set { line-height: 1.6; min-width: 0; }
+  .side-set .left { color: var(--left); }
+  .side-set .right { color: var(--right); }
+  .side-set b { font-weight: 400; color: #e5e7eb; }
+  .result-tag { font-weight: 600; text-align: right; }
+  .result-tag.left-heavy { color: var(--left); }
+  .result-tag.right-heavy { color: var(--right); }
+  .result-tag.balanced { color: var(--gold); }
+  .history-placeholder { height: 50px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #737a91; }
+  .secondary-actions { text-align: center; margin-top: 6px; }
+
+  .answer-hint { margin: 4px 0 24px; text-align: center; }
+  .type-label { text-align: center; font-size: 14px; margin: 22px 0 12px; color: var(--text-dim); }
+  .type-select { display: flex; justify-content: center; gap: 20px; }
+  .type-btn { width: 110px; height: 46px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1.5px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 15px; }
+  .type-btn.selected.heavier { background: rgba(78,204,163,.15); border-color: var(--left); color: var(--left); }
+  .type-btn.selected.lighter { background: rgba(233,69,96,.15); border-color: var(--right); color: var(--right); }
+  .answer-actions { text-align: center; margin-top: 22px; }
+  #submitAnswerBtn { min-width: 180px; }
+  #answerBackBtn { display: block; margin: 4px auto 0; }
+
+  .result-page { min-height: 80svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .result-icon { font-size: 56px; color: var(--gold); line-height: 1; margin-bottom: 20px; }
+  .result-title { font-size: 27px; margin: 0 0 24px; }
+  .result-title.win { color: var(--left); }
+  .result-title.lose { color: var(--right); }
+  .result-detail { font-size: 14px; line-height: 2; color: var(--text-dim); }
+  .result-detail b { color: #fff; }
+  .result-actions { display: flex; justify-content: center; gap: 14px; margin-top: 26px; }
+  .result-actions .btn { min-width: 120px; }
+  .share-note { min-height: 24px; margin: 0; }
+  dialog { width: min(420px, calc(100% - 32px)); max-height: calc(100svh - 40px); color: #fff; background: #16213e; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; padding: 24px; }
+  dialog::backdrop { background: rgba(0,0,0,.78); }
+  dialog h2 { color: var(--gold); font-size: 20px; margin: 0 0 18px; }
+  dialog p, dialog li { font-size: 14px; line-height: 1.8; color: #c7cad4; }
+  dialog ol { padding-left: 20px; }
+  dialog .modal-footer { text-align: center; margin-top: 20px; }
+  dialog .tip { border-top: 1px solid rgba(255,255,255,.12); padding-top: 14px; }
+  @media (max-width: 360px) {
+    .shell { padding-left: 14px; padding-right: 14px; }
+    .game-header .title { font-size: 20px; }
+    .history-item { font-size: 11px; column-gap: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section id="startScreen" class="screen active" aria-label="游戏开始">
+    <header class="game-header">
+      <a class="back-btn" href="../../index.html" aria-label="返回网站首页">←</a>
+      <span></span><button class="help-btn" id="helpBtnStart" aria-label="玩法说明">?</button>
+    </header>
+    <div class="start-page">
+      <svg class="hero-coin" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="35" fill="rgba(255,215,0,.12)" stroke="#ffd700" stroke-width="2"/><circle cx="40" cy="40" r="28" fill="none" stroke="rgba(255,215,0,.3)"/><text x="40" y="52" text-anchor="middle" fill="#ffd700" font-size="36">?</text></svg>
+      <h1 class="game-title">硬币之谜</h1>
+      <p class="game-subtitle subtle">12 枚硬币中，有 1 枚重量不同<br>你能只用 3 次称量找到它吗？</p>
+      <div class="rules-card">
+        <h2>挑战规则</h2>
+        <ol>
+          <li>异常硬币可能偏重，也可能偏轻。</li>
+          <li>用天平比较两边，最多称量 3 次。</li>
+          <li>每次两盘放入相同数量的硬币。</li>
+          <li>最后选出编号，并判断偏重或偏轻。</li>
+        </ol>
+      </div>
+      <button class="btn primary" id="startBtn">开始挑战</button>
+      <p class="stats-line subtle" id="statsLine"></p>
+    </div>
+  </section>
+
+  <section id="weighingScreen" class="screen" aria-label="称量">
+    <header class="game-header">
+      <button class="back-btn" id="backToStart" aria-label="返回游戏开始页">←</button>
+      <h1 class="title">称量 <span id="usedCount">0</span>/3</h1>
+      <button class="help-btn" id="helpBtn" aria-label="玩法说明">?</button>
+    </header>
+    <div class="tray-switch" aria-label="选择放入硬币的托盘">
+      <button class="side-btn left active" id="selectLeftBtn" aria-pressed="true">◀ 左托盘</button>
+      <button class="side-btn right" id="selectRightBtn" aria-pressed="false">右托盘 ▶</button>
+    </div>
+    <div class="scale-wrap">
+      <svg id="scale" viewBox="0 0 360 175" aria-label="天平，重的一侧下沉">
+        <path class="scale-support" d="M180 34 L166 64 L194 64 Z"/>
+        <line id="scaleBeam" class="scale-beam" x1="50" y1="34" x2="310" y2="34"/>
+        <circle cx="180" cy="34" r="4" fill="#ffd700"/>
+        <line id="leftChain" class="scale-chain" x1="60" y1="34" x2="60" y2="62"/>
+        <line id="rightChain" class="scale-chain" x1="300" y1="34" x2="300" y2="62"/>
+        <g id="leftTray" class="tray left" transform="translate(20 62)" role="button" tabindex="0" aria-label="选择左托盘" aria-pressed="true">
+          <rect class="tray-frame" width="80" height="80" rx="8"/>
+          <g id="leftTrayCoins" aria-hidden="true"></g>
+        </g>
+        <g id="rightTray" class="tray right" transform="translate(260 62)" role="button" tabindex="0" aria-label="选择右托盘" aria-pressed="false">
+          <rect class="tray-frame" width="80" height="80" rx="8"/>
+          <g id="rightTrayCoins" aria-hidden="true"></g>
+        </g>
+      </svg>
+    </div>
+    <p id="weighResult" class="weigh-result" aria-live="polite"></p>
+    <div class="weigh-actions">
+      <button class="btn primary" id="weighBtn" disabled>开始称量</button>
+      <p id="weighNote" class="weigh-note">先选托盘，再点下方硬币放入</p>
+    </div>
+    <h2 class="section-label">选择硬币 · 再点一次取出</h2>
+    <div class="coin-grid" id="coinGrid" aria-label="用于称量的十二枚硬币"></div>
+    <section class="history-section" aria-label="称量记录">
+      <h2 class="section-label">称量记录</h2>
+      <div class="weigh-history" id="weighHistoryCompact" aria-live="polite"></div>
+    </section>
+    <div class="secondary-actions"><button class="text-btn" id="answerBtn">已有结论，提前答题 →</button></div>
+  </section>
+
+  <section id="answeringScreen" class="screen" aria-label="选择答案">
+    <header class="game-header">
+      <button class="back-btn" id="answerHomeBtn" aria-label="返回游戏开始页">←</button>
+      <h1 class="title">选择你的答案</h1><span></span>
+    </header>
+    <p class="answer-hint subtle">哪一枚硬币不同？再判断它的轻重。</p>
+    <div class="coin-grid" id="answerCoinGrid" aria-label="选择异常硬币"></div>
+    <p class="type-label">它比其他硬币偏重，还是偏轻？</p>
+    <div class="type-select">
+      <button class="type-btn heavier" id="answerHeavierBtn" aria-pressed="false">↓ 偏重</button>
+      <button class="type-btn lighter" id="answerLighterBtn" aria-pressed="false">↑ 偏轻</button>
+    </div>
+    <section class="history-section" aria-label="答题参考记录">
+      <h2 class="section-label">称量记录</h2>
+      <div class="weigh-history" id="weighHistory"></div>
+    </section>
+    <div class="answer-actions">
+      <button class="btn primary" id="submitAnswerBtn" disabled>确认提交</button>
+      <button class="text-btn" id="answerBackBtn">继续称量</button>
+    </div>
+  </section>
+
+  <section id="resultScreen" class="screen" aria-label="挑战结果">
+    <div class="result-page">
+      <div class="result-icon" id="resultIcon" aria-hidden="true">✓</div>
+      <h1 class="result-title" id="resultTitle">回答正确</h1>
+      <div class="result-detail" id="resultDetail"></div>
+      <div class="result-actions">
+        <button class="btn primary" id="playAgainBtn">再来一局</button>
+        <button class="btn" id="backToMenuBtn">返回菜单</button>
+      </div>
+      <button class="text-btn" id="shareBtn">分享挑战</button>
+      <p class="share-note subtle" id="shareNote" aria-live="polite"></p>
+    </div>
+  </section>
+</main>
+
+<dialog id="helpModal" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">玩法与解题思路</h2>
+  <ol>
+    <li>选左或右托盘，再点下方硬币放入；点已放入的硬币会取出。点击天平的托盘也能切换选择。</li>
+    <li>两盘必须非空且数量相同。称量后结果留在下方记录，托盘会自动清空，准备下一次。</li>
+    <li>最多称量 3 次，最后同时选出异常硬币的编号和轻重。已有把握也可提前答题。</li>
+  </ol>
+  <p class="tip">先尝试 <b>1、2、3、4 对 5、6、7、8</b>。如果平衡，异常在未上秤的 4 枚中；如果不平衡，重盘可能有偏重币，轻盘可能有偏轻币，未上秤的币可作标准币。</p>
+  <p>接下来重新组合硬币，用“已知正常”的硬币作对照，结合每次记录缩小范围。</p>
+  <div class="modal-footer"><button class="btn primary" id="closeHelpBtn">知道了</button></div>
+</dialog>
+
+<script src="../shared/utils.js"></script>
+<script>
+(() => {
+  'use strict';
+  const { loadStats, saveStats, vibrate, randInt } = window.GameUtils;
+  const COIN_COUNT = 12;
+  const MAX_WEIGHINGS = 3;
+  const STORAGE_KEY = 'coin_puzzle_stats';
+  const TILT_DEG = 8;
+  const ANIMATION_MS = 600;
+  const HOLD_MS = 600;
+  const RESULT_TEXT = { left_heavy: '左边重', right_heavy: '右边重', balanced: '一样重' };
+  const $ = id => document.getElementById(id);
+  const screens = { start: $('startScreen'), weighing: $('weighingScreen'), answering: $('answeringScreen'), result: $('resultScreen') };
+  const state = { screen: 'start', phase: 'ready', oddCoin: 0, oddType: '', weighings: [], leftCoins: new Set(), rightCoins: new Set(), currentSide: 'left', answerCoin: 0, answerType: '', result: null };
+  let frameId = 0;
+  let timerId = 0;
+  let generation = 0;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function cancelPending() {
+    generation++;
+    cancelAnimationFrame(frameId);
+    clearTimeout(timerId);
+    frameId = 0;
+    timerId = 0;
+  }
+
+  function showScreen(name) {
+    state.screen = name;
+    Object.entries(screens).forEach(([key, el]) => el.classList.toggle('active', key === name));
+    window.scrollTo(0, 0);
+  }
+
+  function goHome() {
+    cancelPending();
+    state.phase = 'ready';
+    $('helpModal').close();
+    renderStartStats();
+    showScreen('start');
+  }
+
+  function newGame() {
+    cancelPending();
+    Object.assign(state, { oddCoin: randInt(1, COIN_COUNT), oddType: Math.random() < .5 ? 'heavier' : 'lighter', phase: 'ready', weighings: [], currentSide: 'left', answerCoin: 0, answerType: '', result: null });
+    state.leftCoins.clear();
+    state.rightCoins.clear();
+    $('shareNote').textContent = '';
+    drawScale(0);
+    renderWeighing();
+    showScreen('weighing');
+  }
+
+  function isReady() { return state.screen === 'weighing' && state.phase === 'ready'; }
+
+  function switchSide(side) {
+    if (!isReady()) return;
+    state.currentSide = side;
+    renderWeighing();
+  }
+
+  function toggleCoinInTray(coin) {
+    if (!isReady()) return;
+    if (state.leftCoins.has(coin)) state.leftCoins.delete(coin);
+    else if (state.rightCoins.has(coin)) state.rightCoins.delete(coin);
+    else (state.currentSide === 'left' ? state.leftCoins : state.rightCoins).add(coin);
+    vibrate(10);
+    renderWeighing();
+  }
+
+  function drawScale(angle) {
+    const rad = angle * Math.PI / 180;
+    const point = distance => ({ x: 180 + distance * Math.cos(rad), y: 34 + distance * Math.sin(rad) });
+    const a = point(-130), b = point(130);
+    Object.entries({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }).forEach(([k, v]) => $('scaleBeam').setAttribute(k, v));
+    [['left', -120], ['right', 120]].forEach(([side, distance]) => {
+      const p = point(distance);
+      const chain = $(`${side}Chain`);
+      Object.entries({ x1: p.x, y1: p.y, x2: p.x, y2: p.y + 28 }).forEach(([k, v]) => chain.setAttribute(k, v));
+      $(`${side}Tray`).setAttribute('transform', `translate(${p.x - 40} ${p.y + 28})`);
+    });
+  }
+
+  function doWeigh() {
+    if (!isReady() || state.weighings.length >= MAX_WEIGHINGS) return;
+    const left = [...state.leftCoins], right = [...state.rightCoins];
+    if (!left.length || left.length !== right.length) return;
+    const weight = coins => coins.reduce((sum, c) => sum + 10 + (c === state.oddCoin ? (state.oddType === 'heavier' ? 1 : -1) : 0), 0);
+    const diff = weight(left) - weight(right);
+    const result = diff > 0 ? 'left_heavy' : diff < 0 ? 'right_heavy' : 'balanced';
+    const record = { left, right, result };
+    state.weighings.push(record);
+    state.phase = 'animating';
+    state.result = null;
+    renderWeighing();
+    vibrate(20);
+    const token = generation;
+    const started = performance.now();
+    const target = result === 'left_heavy' ? -TILT_DEG : result === 'right_heavy' ? TILT_DEG : 0;
+    function tick(now) {
+      if (token !== generation) return;
+      const t = Math.min(1, (now - started) / ANIMATION_MS);
+      drawScale(target * (reducedMotion.matches ? 1 : 1 - Math.pow(1 - t, 3)));
+      if (t < 1) { frameId = requestAnimationFrame(tick); return; }
+      frameId = 0;
+      state.phase = 'feedback';
+      state.result = result;
+      renderWeighing();
+      timerId = setTimeout(() => {
+        if (token !== generation) return;
+        state.leftCoins.clear();
+        state.rightCoins.clear();
+        state.result = null;
+        drawScale(0);
+        if (state.weighings.length === MAX_WEIGHINGS) {
+          renderWeighing();
+          timerId = setTimeout(() => { if (token === generation) showAnsweringScreen(); }, 300);
+        } else {
+          state.phase = 'ready';
+          renderWeighing();
+        }
+      }, HOLD_MS);
+    }
+    frameId = requestAnimationFrame(tick);
+  }
+
+  function makeCoinButtons(container, answerMode) {
+    for (let i = 1; i <= COIN_COUNT; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'coin';
+      btn.dataset.coin = i;
+      btn.innerHTML = `<span class="coin-face">${i}</span><span class="coin-place"></span>`;
+      btn.addEventListener('click', () => {
+        if (!answerMode) { toggleCoinInTray(i); return; }
+        if (state.screen !== 'answering') return;
+        state.answerCoin = state.answerCoin === i ? 0 : i;
+        vibrate(10);
+        renderAnswering();
+      });
+      container.appendChild(btn);
+    }
+  }
+
+  function renderCoins(container, answerMode) {
+    [...container.children].forEach((btn, index) => {
+      const coin = index + 1;
+      const side = state.leftCoins.has(coin) ? 'left' : state.rightCoins.has(coin) ? 'right' : '';
+      const selected = answerMode && state.answerCoin === coin;
+      btn.classList.toggle('in-left', !answerMode && side === 'left');
+      btn.classList.toggle('in-right', !answerMode && side === 'right');
+      btn.classList.toggle('selected-answer', selected);
+      btn.disabled = !answerMode && state.phase !== 'ready';
+      const label = answerMode ? (selected ? '已选' : '') : (side === 'left' ? '左' : side === 'right' ? '右' : '');
+      btn.querySelector('.coin-place').textContent = label;
+      btn.setAttribute('aria-label', `${coin}号硬币${label ? '，' + label : ''}`);
+      btn.setAttribute('aria-pressed', String(answerMode ? selected : !!side));
+    });
+  }
+
+  function renderTray(side, coins) {
+    const box = $(`${side}TrayCoins`);
+    const list = [...coins];
+    if (!list.length) {
+      box.innerHTML = `<text x="40" y="40" class="tray-placeholder">${side === 'left' ? '左' : '右'}托盘</text>`;
+      return;
+    }
+    const pitch = list.length > 9 ? 17 : 22;
+    const rows = Math.ceil(list.length / 3);
+    const cols = Math.min(3, list.length);
+    box.innerHTML = list.map((coin, i) => {
+      const x = 40 + ((i % 3) - (cols - 1) / 2) * pitch;
+      const y = 40 + (Math.floor(i / 3) - (rows - 1) / 2) * pitch;
+      return `<circle cx="${x}" cy="${y}" r="${pitch / 2 - 2}"/><text class="coin-number" x="${x}" y="${y}">${coin}</text>`;
+    }).join('');
+  }
+
+  function renderHistory(box) {
+    box.innerHTML = state.weighings.map((w, i) => `<div class="history-item"><span class="no">${i + 1}</span><div class="side-set"><div class="left">左 <b>${w.left.join(', ')}</b></div><div class="right">右 <b>${w.right.join(', ')}</b></div></div><span class="result-tag ${w.result.replace('_', '-')}">${RESULT_TEXT[w.result]}</span></div>`).join('');
+    if (!state.weighings.length) box.innerHTML = '<div class="history-placeholder">尚无记录，完成称量后显示在这里</div>';
+  }
+
+  function renderWeighing() {
+    const busy = state.phase !== 'ready';
+    $('usedCount').textContent = state.weighings.length;
+    ['left', 'right'].forEach(side => {
+      const selected = state.currentSide === side;
+      const btn = $(side === 'left' ? 'selectLeftBtn' : 'selectRightBtn');
+      btn.classList.toggle('active', selected);
+      btn.setAttribute('aria-pressed', String(selected));
+      btn.disabled = busy;
+      $(`${side}Tray`).setAttribute('aria-pressed', String(selected));
+      $(`${side}Tray`).setAttribute('aria-disabled', String(busy));
+      renderTray(side, side === 'left' ? state.leftCoins : state.rightCoins);
+    });
+    renderCoins($('coinGrid'), false);
+    const left = state.leftCoins.size, right = state.rightCoins.size;
+    const valid = left > 0 && left === right;
+    $('weighBtn').disabled = busy || !valid || state.weighings.length >= MAX_WEIGHINGS;
+    $('weighBtn').textContent = busy ? '称量中…' : left !== right ? '两边数量需相等' : '开始称量';
+    $('weighNote').textContent = busy ? '请稍候，结果将保留在下方记录' : left + right ? `左盘 ${left} 枚 · 右盘 ${right} 枚` : '先选托盘，再点下方硬币放入';
+    $('answerBtn').disabled = busy;
+    $('weighResult').textContent = state.result ? RESULT_TEXT[state.result] : '';
+    $('weighResult').className = `weigh-result ${state.result ? state.result.replace('_', '-') : ''}`;
+    renderHistory($('weighHistoryCompact'));
+  }
+
+  function showAnsweringScreen() {
+    cancelPending();
+    state.phase = 'ready';
+    state.answerCoin = 0;
+    state.answerType = '';
+    showScreen('answering');
+    renderAnswering();
+  }
+
+  function renderAnswering() {
+    renderCoins($('answerCoinGrid'), true);
+    [['heavier', 'answerHeavierBtn'], ['lighter', 'answerLighterBtn']].forEach(([type, id]) => {
+      $(id).classList.toggle('selected', state.answerType === type);
+      $(id).setAttribute('aria-pressed', String(state.answerType === type));
+    });
+    $('submitAnswerBtn').disabled = !state.answerCoin || !state.answerType;
+    $('answerBackBtn').hidden = state.weighings.length >= MAX_WEIGHINGS;
+    renderHistory($('weighHistory'));
+  }
+
+  function getStats() {
+    let stored = loadStats(STORAGE_KEY, null);
+    if (typeof stored === 'string') { try { stored = JSON.parse(stored); } catch (_) { stored = null; } }
+    const stats = {};
+    ['wins', 'losses', 'total', 'streak', 'maxStreak'].forEach(key => {
+      const n = stored && stored[key];
+      stats[key] = Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+    });
+    return stats;
+  }
+
+  function submitAnswer() {
+    if (state.screen !== 'answering' || !state.answerCoin || !state.answerType) return;
+    const won = state.answerCoin === state.oddCoin && state.answerType === state.oddType;
+    const stats = getStats();
+    stats.total++;
+    if (won) { stats.wins++; stats.streak++; stats.maxStreak = Math.max(stats.maxStreak, stats.streak); }
+    else { stats.losses++; stats.streak = 0; }
+    saveStats(STORAGE_KEY, JSON.stringify(stats));
+    cancelPending();
+    showScreen('result');
+    vibrate(won ? 15 : 30);
+    $('resultIcon').textContent = won ? '✓' : '×';
+    $('resultTitle').textContent = won ? '找到了，推理正确！' : '这次没有猜对';
+    $('resultTitle').className = `result-title ${won ? 'win' : 'lose'}`;
+    const typeText = type => type === 'heavier' ? '偏重' : '偏轻';
+    $('resultDetail').innerHTML = `<div>正确答案：<b>${state.oddCoin} 号硬币 · ${typeText(state.oddType)}</b></div><div>你的答案：<b>${state.answerCoin} 号硬币 · ${typeText(state.answerType)}</b></div><div>使用称量：${state.weighings.length} / ${MAX_WEIGHINGS} 次</div>`;
+  }
+
+  function renderStartStats() {
+    const s = getStats();
+    $('statsLine').textContent = s.total ? `战绩：${s.wins} 胜 ${s.losses} 负 · 正确率 ${Math.round(s.wins / s.total * 100)}% · 最长连胜 ${s.maxStreak}` : '观察、对比、推理，找到那枚不同的硬币';
+  }
+
+  $('startBtn').addEventListener('click', newGame);
+  $('playAgainBtn').addEventListener('click', newGame);
+  ['backToStart', 'answerHomeBtn', 'backToMenuBtn'].forEach(id => $(id).addEventListener('click', goHome));
+  ['helpBtnStart', 'helpBtn'].forEach(id => $(id).addEventListener('click', () => $('helpModal').showModal()));
+  $('closeHelpBtn').addEventListener('click', () => $('helpModal').close());
+  ['left', 'right'].forEach(side => {
+    $(side === 'left' ? 'selectLeftBtn' : 'selectRightBtn').addEventListener('click', () => switchSide(side));
+    $(`${side}Tray`).addEventListener('click', () => switchSide(side));
+    $(`${side}Tray`).addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); switchSide(side); }
+    });
+  });
+  $('weighBtn').addEventListener('click', doWeigh);
+  $('answerBtn').addEventListener('click', () => { if (isReady()) showAnsweringScreen(); });
+  [['answerHeavierBtn', 'heavier'], ['answerLighterBtn', 'lighter']].forEach(([id, type]) => $(id).addEventListener('click', () => {
+    if (state.screen !== 'answering') return;
+    state.answerType = state.answerType === type ? '' : type;
+    renderAnswering();
+  }));
+  $('submitAnswerBtn').addEventListener('click', submitAnswer);
+  $('answerBackBtn').addEventListener('click', () => {
+    if (state.screen !== 'answering' || state.weighings.length >= MAX_WEIGHINGS) return;
+    showScreen('weighing');
+    renderWeighing();
+  });
+  $('shareBtn').addEventListener('click', async () => {
+    const data = { title: '硬币之谜', text: '12 枚硬币，3 次称量，你能找到异常硬币吗？', url: location.href };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(data.url); $('shareNote').textContent = '挑战链接已复制'; }
+      else $('shareNote').textContent = '请复制地址栏链接分享给好友';
+    } catch (error) {
+      if (error.name !== 'AbortError') $('shareNote').textContent = '请复制地址栏链接分享给好友';
+    }
+  });
+  window.addEventListener('pagehide', cancelPending);
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) {
+      state.phase = 'ready';
+      state.result = null;
+      state.leftCoins.clear();
+      state.rightCoins.clear();
+      drawScale(0);
+      if (state.screen === 'weighing' && state.weighings.length >= MAX_WEIGHINGS) showAnsweringScreen();
+      else renderWeighing();
+    }
+  });
+  makeCoinButtons($('coinGrid'), false);
+  makeCoinButtons($('answerCoinGrid'), true);
+  renderStartStats();
+  renderWeighing();
+})();
+</script>
+</body>
+</html>
